@@ -112,18 +112,18 @@ def create_app():
     # DB config - PostgreSQL or SQLite
     # Database Configuration
     app.config["SQLALCHEMY_DATABASE_URI"] = (
-        f"postgresql://"
-        f"{os.getenv('PG_USER', 'postgres')}:"
-        f"{os.getenv('PG_PASS', 'lingeswar')}@"
-        f"{os.getenv('PG_HOST', 'localhost')}:"
-        f"{os.getenv('PG_PORT', '5432')}/"
-        f"{os.getenv('PG_DB', 'emi_guardian')}"
-        )
+    f"postgresql://"
+    f"{os.getenv('PG_USER')}:" 
+    f"{os.getenv('PG_PASS')}@"
+    f"{os.getenv('PG_HOST')}:"
+    f"{os.getenv('PG_PORT')}/"
+    f"{os.getenv('PG_DB')}"
+    )
 
     # PostgreSQL Configuration
-    app.config["SQLALCHEMY_DATABASE_URI"] = (
-        "postgresql://postgres:lingeswar@localhost:5432/emi_guardian"
-        )
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+       
+        
 
 
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
