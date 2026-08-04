@@ -103,51 +103,64 @@ class Payment(db.Model):
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
 
 # ── App Factory ──────────────────────────────────────────────────────────────
+# ── App Factory ──────────────────────────────────────────────────────────────
 def create_app():
     app = Flask(__name__)
-    app.config['SECRET_KEY'] =  os.getenv('SECRET_KEY')
+
+    # Secret Key
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "emi-guardian-secret")
 
     scheduler = APScheduler()
 
-    # DB config - PostgreSQL or SQLite
-    # Database Configuration
-    app.config["SQLALCHEMY_DATABASE_URI"] = (
-    f"postgresql://"
-    f"{os.getenv('PG_USER')}:" 
-    f"{os.getenv('PG_PASS')}@"
-    f"{os.getenv('PG_HOST')}:"
-    f"{os.getenv('PG_PORT')}/"
-    f"{os.getenv('PG_DB')}"
-    )
+    # ---------------- Database Configuration ----------------
+    database_url = os.getenv("DATABASE_URL")
 
-    # PostgreSQL Configuration
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
-       
-        
-
+    if database_url:
+        # Render PostgreSQL
+        app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    else:
+        # Local PostgreSQL
+        app.config["SQLALCHEMY_DATABASE_URI"] = (
+            f"postgresql://"
+            f"{os.getenv('PG_USER', 'postgres')}:"
+            f"{os.getenv('PG_PASS', 'lingeswar')}@"
+            f"{os.getenv('PG_HOST', 'localhost')}:"
+            f"{os.getenv('PG_PORT', '5432')}/"
+            f"{os.getenv('PG_DB', 'emi_guardian')}"
+        )
 
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+    # Initialize Extensions
     db.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
-    login_manager.login_message = 'Please login to continue.'
-    login_manager.login_message_category = 'info'
+
+    login_manager.login_view = "auth.login"
+    login_manager.login_message = "Please login to continue."
+    login_manager.login_message_category = "info"
 
     @login_manager.user_loader
     def load_user(uid):
         return db.session.get(User, int(uid))
 
+    # Register Blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(dash_bp)
     app.register_blueprint(emi_bp)
-    app.register_blueprint(admin_bp, url_prefix='/admin')
-    app.register_blueprint(api_bp,url_prefix='/api')
-    app.register_blueprint(notification_bp, url_prefix='/admin')
+    app.register_blueprint(admin_bp, url_prefix="/admin")
+    app.register_blueprint(api_bp, url_prefix="/api")
+    app.register_blueprint(notification_bp, url_prefix="/admin")
+
+    # Start Scheduler
+    scheduler.init_app(app)
+    scheduler.start()
+
+    # Create Database Tables
     with app.app_context():
         db.create_all()
         seed()
+
     return app
 
 def seed():
