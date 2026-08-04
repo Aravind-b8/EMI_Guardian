@@ -828,8 +828,9 @@ def stats():
     emis=db.session.execute(select(EMI).where(EMI.user_id==current_user.id,EMI.is_active==True)).scalars().all()
     return jsonify({'monthly_trend':monthly,'by_category':[{'cat':e.category,'emi':e.emi_amount,'rate':e.interest_rate} for e in emis]})
 
-if __name__ == '__main__':
-    app = create_app()
+app = create_app()
+
+if __name__ == "__main__":
     app.run(debug=True)
 
 # 📥 1. THE OUTBOUND CHANNELS (Real Workers)
