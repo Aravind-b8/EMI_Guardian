@@ -1,0 +1,75 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Users — Admin{% endblock %}
+{% block page_title %}Manage Users{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+  <div style="font-size:13px;color:var(--text3)">{{ users|length }} registered users</div>
+  <input class="search-input" type="text" placeholder="🔍 Search users..." oninput="filterTable(this,'users-table')">
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table id="users-table">
+      <thead>
+        <tr><th>User</th><th>Income</th><th>EMIs</th><th>Monthly Load</th><th>Ratio</th><th>Health</th><th>Joined</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#9f67ff);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">{{ u.name[0].upper() }}</div>
+              <div>
+                <div style="font-weight:500;color:var(--text)">{{ u.name }}</div>
+                <div style="font-size:11px;color:var(--text3)">{{ u.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td style="color:#10b981;font-weight:500">₹{{ "{:,.0f}".format(u.monthly_income) }}</td>
+          <td style="font-weight:600;text-align:center;color:var(--text)">{{ u.emis|selectattr('is_active')|list|length }}</td>
+          <td style="color:var(--text);font-weight:500">₹{{ "{:,.0f}".format(u.total_emi()) }}</td>
+          <td>
+            {% set r = u.emi_ratio() %}
+            <div style="display:flex;align-items:center;gap:7px">
+              <div class="progress-bar" style="width:60px">
+                <div class="pf {{ 'g' if r<=35 else 'a' if r<=50 else 'r' }}" style="width:{{ [r,100]|min }}%"></div>
+              </div>
+              <span style="color:{{ '#ef4444' if r>50 else '#f59e0b' if r>35 else '#10b981' }};font-size:12px;font-weight:600">{{ r }}%</span>
+            </div>
+          </td>
+          <td>
+            {% set s = u.health_score() %}
+            <span style="color:{{ '#10b981' if s>=75 else '#f59e0b' if s>=50 else '#ef4444' }};font-weight:700;font-size:13px">{{ s }}</span>
+            <span style="font-size:10px;color:var(--text3)">/100</span>
+          </td>
+          <td style="color:var(--text3);font-size:12px">{{ u.created_at.strftime('%d %b %Y') }}</td>
+          <td><span class="badge {{ 'active' if u.is_active_account else 'inactive' }}">{{ 'Active' if u.is_active_account else 'Inactive' }}</span></td>
+          <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <a href="{{ url_for('admin.user_detail', uid=u.id) }}" class="btn btn-g btn-xs"><i class="fa-solid fa-eye"></i> View</a>
+              <form method="POST" action="{{ url_for('admin.toggle_user', uid=u.id) }}" style="display:inline">
+                <button type="submit" class="btn btn-xs {{ 'btn-r' if u.is_active_account else 'btn-success' }}">
+                  {{ 'Deactivate' if u.is_active_account else 'Activate' }}
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterTable(inp, tableId) {
+  const q = inp.value.toLowerCase();
+  document.querySelectorAll(`#${tableId} tbody tr`).forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

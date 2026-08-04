@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Add EMI — EMI Guardian AI{% endblock %}
+{% block page_title %}Add a New EMI{% endblock %}
+{% block page_subtitle %}Enter your loan details to start tracking{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Loan Details</div>
+    <form method="POST" id="emi-form">
+      <div class="form-group">
+        <label>Loan Name *</label>
+        <input type="text" class="form-control" name="name" id="f-name" placeholder="e.g. HDFC Bike Loan" required oninput="updatePreview()">
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Category *</label>
+          <select class="form-control" name="category" id="f-cat" onchange="updatePreview()">
+            <option>Bike</option><option>Home</option><option>Car</option>
+            <option>Mobile</option><option>Education</option><option>Personal</option>
+            <option>Credit Card</option><option>Others</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>EMI Day (1–28) *</label>
+          <input type="number" class="form-control" name="emi_day" id="f-day" value="5" min="1" max="28" required>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Loan Amount (₹) *</label>
+          <input type="number" class="form-control" name="loan_amount" id="f-amt" placeholder="200000" min="1000" required oninput="calcPreview()">
+        </div>
+        <div class="form-group">
+          <label>Interest Rate (% p.a.) *</label>
+          <input type="number" class="form-control" name="interest_rate" id="f-rate" placeholder="11" step="0.1" min="0" max="50" required oninput="calcPreview()">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Duration (months) *</label>
+          <input type="number" class="form-control" name="duration_months" id="f-dur" placeholder="24" min="1" max="360" required oninput="calcPreview()">
+        </div>
+        <div class="form-group">
+          <label>Start Date *</label>
+          <input type="date" class="form-control" name="start_date" id="f-start" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes (optional)</label>
+        <input type="text" class="form-control" name="notes" placeholder="e.g. HDFC Bank, Account: XXXX1234">
+      </div>
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center">
+          <i class="fa-solid fa-plus"></i> Add EMI
+        </button>
+        <a href="{{ url_for('emi_bp.list_emis') }}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- START OF RIGHT-HAND PREVIEW & AI PANEL COLUMN -->
+<div style="display: flex; flex-direction: column; gap: 15px; max-width: 420px; width: 100%;">
+
+    <!-- 📊 CARD 1: LIVE PREVIEW MATRIX WITH STRICT CANVAS HEIGHTS -->
+    <div class="card" style="margin-bottom:0px; background: #151824; border-radius: 12px; padding: 20px; border: 1px solid #232736; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        <div class="card-title" style="color: #ffffff; font-weight: bold; font-size: 14px; margin-bottom: 15px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-chart-line" style="color: #4f7ef8;"></i> Live Preview
+        </div>
+        
+        <!-- Empty State View Wrapper -->
+        <div id="preview-empty" style="text-align:center; padding:24px; color:#5a5e7a;">
+            <div style="font-size:40px; margin-bottom:10px;" id="cat-icon">💰</div>
+            <div style="font-size:13px;">Fill in loan details to see preview</div>
+        </div>
+
+        <!-- Populated Results Grid -->
+        <div id="preview-result" style="display:none;">
+            <div style="text-align:center; margin-bottom:18px;">
+                <div style="font-size:44px;" id="p-icon">💰</div>
+                <div style="font-size:14px; color:#8b8fa8; margin-top:6px;" id="p-name">Your Loan</div>
+            </div>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+                <div style="background:#0f111a; border-radius:10px; padding:12px; border:1px solid #232736;">
+                    <div style="font-size:11px; color:#5a5e7a;">Monthly EMI</div>
+                    <div style="font-size:20px; font-weight:700; color:#4f7ef8;" id="p-emi">—</div>
+                </div>
+                <div style="background:#0f111a; border-radius:10px; padding:12px; border:1px solid #232736;">
+                    <div style="font-size:11px; color:#5a5e7a;">Total Interest</div>
+                    <div style="font-size:20px; font-weight:700; color:#f87171;" id="p-int">—</div>
+                </div>
+                <div style="background:#0f111a; border-radius:10px; padding:12px; border:1px solid #232736;">
+                    <div style="font-size:11px; color:#5a5e7a;">Total Payment</div>
+                    <div style="font-size:16px; font-weight:700; color:#e8eaff;" id="p-total">—</div>
+                </div>
+                <div style="background:#0f111a; border-radius:10px; padding:12px; border:1px solid #232736;">
+                    <div style="font-size:11px; color:#5a5e7a;">Loan Ends</div>
+                    <div style="font-size:16px; font-weight:700; color:#22d3a5;" id="p-end">—</div>
+                </div>
+            </div>
+            
+            <!-- 🌟 CANVAS LOCK: Prevents ChartJS from stretching downwards indefinitely -->
+            <div style="position: relative; height: 120px; width: 100%;">
+                <canvas id="preview-chart" style="max-height: 120px !important; width: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🤖 CARD 2: LOCKED HEIGHT SCROLLABLE AI ADVICE CARD -->
+    <div class="ai-card" style="background: #111420; border-radius: 12px; border: 1px solid #282f48; box-shadow: 0 4px 15px rgba(0,0,0,0.4); height: 160px; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="ai-header" style="background: #181d2f; color: #ffffff; font-weight: bold; font-size: 13px; padding: 12px 16px; border-bottom: 1px solid #282f48; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-robot" style="color: #22d3a5;"></i> AI Advice Engine
+        </div>
+        
+        <!-- 🌟 SMART SCROLL WINDOW: Caps layout height and adds clean vertical scroll scrollbars -->
+        <div class="ai-text" id="ai-tip" style="flex: 1; overflow-y: auto; color: #8b8fa8; font-size: 13px; padding: 14px; line-height: 1.5; font-family: monospace; background: #0f111a;">
+            Fill in the loan details and I'll give you personalized advice.
+        </div>
+    </div>
+
+</div>
+<!-- END OF RIGHT-HAND PREVIEW & AI PANEL COLUMN -->
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const icons = {Bike:'🏍️',Home:'🏠',Car:'🚗',Mobile:'📱',Education:'🎓',Personal:'👤','Credit Card':'💳',Others:'📦'};
+let previewChart;
+document.getElementById('f-start').valueAsDate = new Date();
+
+function updatePreview() {
+  const cat = document.getElementById('f-cat').value;
+  const icon = icons[cat] || '💰';
+  document.getElementById('cat-icon').textContent = icon;
+  document.getElementById('p-icon').textContent = icon;
+  document.getElementById('p-name').textContent = document.getElementById('f-name').value || 'Your Loan';
+  calcPreview();
+}
+
+function calcEMI(P,r,n) {
+  if(!P||!r||!n) return 0;
+  const R=r/(12*100);
+  if(R===0) return P/n;
+  return P*R*Math.pow(1+R,n)/(Math.pow(1+R,n)-1);
+}
+function fmt(n) { return '₹'+Math.round(n).toLocaleString('en-IN'); }
+
+function calcPreview() {
+  const P=+document.getElementById('f-amt').value;
+  const r=+document.getElementById('f-rate').value;
+  const n=+document.getElementById('f-dur').value;
+  if(!P||!r||!n) return;
+  const emi=calcEMI(P,r,n), total=emi*n, interest=total-P;
+  const start=document.getElementById('f-start').value||new Date().toISOString().split('T')[0];
+  const end=new Date(start); end.setMonth(end.getMonth()+n);
+
+  document.getElementById('preview-empty').style.display='none';
+  document.getElementById('preview-result').style.display='block';
+  document.getElementById('p-emi').textContent=fmt(emi);
+  document.getElementById('p-int').textContent=fmt(interest);
+  document.getElementById('p-total').textContent=fmt(total);
+  document.getElementById('p-end').textContent=end.toLocaleDateString('en-IN',{month:'short',year:'numeric'});
+
+  let tip='';
+  if(r>20) tip=`⚠️ ${r}% is very high interest! Consider negotiating a lower rate before committing.`;
+  else if(r>15) tip=`💡 At ${r}%, prepay this loan whenever you have surplus funds to save on interest.`;
+  else if(interest>P*0.5) tip=`📌 You'll pay ${Math.round(interest/P*100)}% extra as interest. A shorter tenure reduces this.`;
+  else tip=`✅ Reasonable rate at ${r}%. Keep EMIs below 40% of your income for financial health.`;
+  document.getElementById('ai-tip').textContent=tip;
+
+  const ctx=document.getElementById('preview-chart').getContext('2d');
+  if(previewChart) previewChart.destroy();
+  previewChart=new Chart(ctx,{
+    type:'bar',
+    data:{labels:['Principal','Interest'],datasets:[{data:[Math.round(P),Math.round(interest)],backgroundColor:['#4f7ef8','#f87171'],borderRadius:8,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>'₹'+Math.round(v/1000)+'k',color:'#5a5e7a'},grid:{color:'rgba(255,255,255,0.04)'}},
+              x:{ticks:{color:'#8b8fa8'},grid:{display:false}}}}
+  });
+}
+</script>
+{% endblock %}

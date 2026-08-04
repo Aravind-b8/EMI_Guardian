@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 1100px; margin: 20px auto; padding: 0 20px; display: grid; grid-template-columns: 1fr 350px; gap: 20px; align-items: start;">
+    
+    <!-- 💬 LEFT PANEL: CHATBOX WORKSPACE -->
+    <div style="background: #151824; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid #232736; height: 530px; display: flex; flex-direction: column;">
+        <h3 style="color: #ffffff; margin-top:0; margin-bottom: 5px;"><i class="fa-solid fa-robot" style="color: #4e73df;"></i> EMI Guardian AI Advisor</h3>
+        <p style="color: #8c91b2; font-size:13px; margin-bottom: 15px;">Ask me anything about your loans, interest strategies, or financial budgeting targets.</p>
+        
+        <!-- Chatbox Container Window -->
+        <div id="chat-window" style="flex: 1; overflow-y: auto; background: #0f111a; border-radius: 8px; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 12px; border: 1px solid #232736;">
+            <div style="background: #232736; color: #ffffff; padding: 10px 14px; border-radius: 8px; align-self: flex-start; max-width: 80%; font-size:13px;">
+                Hello surya! I am your personal financial advisor. How can I help you manage your EMIs today?
+            </div>
+        </div>
+
+        <!-- Input Box Panel Row -->
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="user-input" placeholder="Type your financial question here..." style="flex: 1; background: #0f111a; border: 1px solid #232736; color: #ffffff; padding: 12px; border-radius: 6px; outline: none; font-size:13px;">
+            <button onclick="sendMessage()" style="background: #4e73df; color: #ffffff; border: none; padding: 0 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size:13px;">Send</button>
+        </div>
+    </div>
+
+    <!-- 📊 RIGHT PANEL: VISUAL CREDIT HEALTH METRICS -->
+    <div style="background: #151824; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid #232736; min-height: 530px; display: flex; flex-direction: column; align-items: center; justify-content: space-between;">
+        <div style="width: 100%; text-align: left;">
+            <h4 style="color: #ffffff; margin-top: 0; margin-bottom: 5px; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px; color: #8c91b2;">🛡️ Credit Health Radar</h4>
+            <p style="color: #5a5e7a; font-size: 11px; margin-bottom: 25px;">Live health score calculated via asset-to-liability ratios.</p>
+        </div>
+
+        <!-- Visual Ring Dial Meter Chart Layer -->
+        <div style="position: relative; width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <svg width="180" height="180" viewBox="0 0 180 180" style="transform: rotate(-90deg);">
+                <circle cx="90" cy="90" r="75" stroke="#1f2334" stroke-width="14" fill="transparent" />
+                <circle cx="90" cy="90" r="75" stroke="#1cc88a" stroke-width="14" fill="transparent" 
+                        stroke-dasharray="471" stroke-dashoffset="110" stroke-linecap="round" />
+            </svg>
+            <div style="position: absolute; text-align: center; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                <span style="display: block; font-size: 34px; font-weight: bold; color: #ffffff; font-family: monospace; line-height: 1;">745</span>
+                <span style="font-size: 11px; color: #1cc88a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: block; margin-top: 4px;">Good</span>
+            </div>
+        </div>
+
+        <!-- Metric Details Output Layout Box -->
+        <div style="width: 100%; background: #0f111a; border-radius: 8px; padding: 15px; border: 1px solid #232736; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                <span style="color: #8c91b2;">Debt-to-Income:</span>
+                <span style="color: #f6c23e; font-weight: bold;">46.7%</span>
+            </div>
+            <div style="height: 1px; background: #232736;"></div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                <span style="color: #8c91b2;">Active EMIs:</span>
+                <span style="color: #ffffff; font-weight: bold;">6 Accounts</span>
+            </div>
+            <div style="height: 1px; background: #232736;"></div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                <span style="color: #8c91b2;">Monthly Outflow:</span>
+                <span style="color: #ffffff; font-weight: bold;">₹21,012.18</span>
+            </div>
+        </div>
+
+        <div style="font-size: 11px; color: #5a5e7a; text-align: center; width: 100%; margin-top: 15px; border-top: 1px solid #232736; padding-top: 12px;">
+            Status: **Low Risk Stable Profile**
+        </div>
+    </div>
+
+</div>
+
+<!-- 📜 JAVASCRIPT CORE ACTION PROCESSOR LINKED TO FLASK ENDPOINTS -->
+<script>
+function sendMessage() {
+    const inputField = document.getElementById('user-input');
+    const chatWindow = document.getElementById('chat-window');
+    const messageText = inputField.value.trim();
+    
+    if (!messageText) return;
+
+    chatWindow.innerHTML += `<div style="background: #4e73df; color: #ffffff; padding: 10px 14px; border-radius: 8px; align-self: flex-end; max-width: 80%; font-size:13px;">${messageText}</div>`;
+    inputField.value = '';
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    chatWindow.innerHTML += `<div id="loading" style="color: #5a5e7a; font-size: 12px; align-self: flex-start;">AI is analyzing...</div>`;
+
+    fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: messageText })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const loadingEl = document.getElementById('loading');
+        if (loadingEl) loadingEl.remove();
+        
+        // Formats newlines cleanly for bullet points
+        let formattedReply = data.reply.replace(/\n/g, '<br>');
+        
+        chatWindow.innerHTML += `<div style="background: #232736; color: #ffffff; padding: 10px 14px; border-radius: 8px; align-self: flex-start; max-width: 80%; font-size:13px; line-height: 1.5;">${formattedReply}</div>`;
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    })
+    .catch(() => {
+        const loadingEl = document.getElementById('loading');
+        if (loadingEl) loadingEl.remove();
+        chatWindow.innerHTML += `<div style="color: #e74a3b; font-size: 12px; align-self: flex-start;">Connection error failed.</div>`;
+    });
+}
+
+document.getElementById('user-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') sendMessage();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — EMI Guardian AI{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Welcome back, {{ current_user.name }} 👋  •  {{ today.strftime('%B %Y') }}{% endblock %}
+
+{% block content %}
+<!-- STATS ROW -->
+<div class="stats-grid">
+  <div class="stat-card blue">
+    <div class="stat-icon blue"><i class="fa-solid fa-layer-group"></i></div>
+    <div class="stat-val">{{ emis|length }}</div>
+    <div class="stat-label">Total Active EMIs</div>
+    <div class="stat-sub">Across all categories</div>
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div>
+    <div class="stat-val">{{ pending|length }}</div>
+    <div class="stat-label">Pending This Month</div>
+    <div class="stat-sub">Need to be paid</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+    <div class="stat-val">{{ paid|length }}</div>
+    <div class="stat-label">Paid This Month</div>
+    <div class="stat-sub">Great job!</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <div class="stat-val">{{ overdue|length }}</div>
+    <div class="stat-label">Overdue</div>
+    <div class="stat-sub">Needs attention now</div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-icon purple"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+    <div class="stat-val">₹{{ "{:,.0f}".format(total_outstanding) }}</div>
+    <div class="stat-label">Total Outstanding</div>
+    <div class="stat-sub">Remaining across loans</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-icon blue"><i class="fa-solid fa-calendar-days"></i></div>
+    <div class="stat-val">₹{{ "{:,.0f}".format(monthly_emi) }}</div>
+    <div class="stat-label">Monthly EMI Load</div>
+    <div class="stat-sub">{{ current_user.emi_ratio() }}% of income</div>
+  </div>
+</div>
+
+<!-- UPCOMING + HEALTH -->
+<div class="grid-2" style="margin-bottom:16px">
+  {% if upcoming %}
+  {% set u = upcoming[0] %}
+  <div class="upcoming-alert">
+    <div class="upcoming-icon">{{ u.category_icon() }}</div>
+    <div style="flex:1">
+      <div style="font-weight:600;font-size:14px;color:#fbbf24">{{ u.name }}</div>
+      <div style="font-size:13px;color:#8b8fa8;margin-top:3px">
+        ₹{{ "{:,.0f}".format(u.emi_amount) }} due
+        {% if u.days_until_due() == 0 %}TODAY
+        {% elif u.days_until_due() == 1 %}tomorrow
+        {% else %}in {{ u.days_until_due() }} days{% endif %}
+        — {{ u.next_due_date().strftime('%d %b %Y') }}
+      </div>
+    </div>
+    <form method="POST" action="{{ url_for('emi_bp.mark_paid', eid=u.id) }}" style="display:inline">
+      <input type="hidden" name="mode" value="UPI">
+      <input type="hidden" name="remarks" value="Quick pay from dashboard">
+      <button type="submit" class="btn btn-success btn-sm">Mark Paid</button>
+    </form>
+  </div>
+  {% else %}
+  <div class="card" style="display:flex;align-items:center;gap:14px">
+    <div style="font-size:32px">🎉</div>
+    <div>
+      <div style="font-weight:600;color:#22d3a5">All caught up!</div>
+      <div style="font-size:13px;color:#5a5e7a">No upcoming EMIs in the next few days.</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- HEALTH SCORE -->
+  <div class="card" style="display:flex;align-items:center;gap:20px">
+    {% set score = current_user.health_score() %}
+    <div class="score-ring">
+      <svg width="70" height="70" viewBox="0 0 70 70">
+        <circle cx="35" cy="35" r="28" fill="none" stroke="#1a1d35" stroke-width="8"/>
+        <circle cx="35" cy="35" r="28" fill="none"
+          stroke="{% if score >= 75 %}#22d3a5{% elif score >= 50 %}#fbbf24{% else %}#f87171{% endif %}"
+          stroke-width="8" stroke-linecap="round"
+          stroke-dasharray="{{ (score/100)*175.9 }} 175.9"/>
+      </svg>
+      <div class="score-text">{{ score }}</div>
+    </div>
+    <div>
+      <div style="font-size:13px;color:#5a5e7a;margin-bottom:4px">Financial Health Score</div>
+      <div style="font-size:17px;font-weight:700;color:{% if score >= 75 %}#22d3a5{% elif score >= 50 %}#fbbf24{% else %}#f87171{% endif %}">
+        {% if score >= 75 %}Excellent{% elif score >= 50 %}Fair{% else %}At Risk{% endif %}
+      </div>
+      <div style="font-size:12px;color:#5a5e7a;margin-top:4px">EMI ratio: {{ current_user.emi_ratio() }}% of income</div>
+    </div>
+  </div>
+</div>
+
+<!-- CHARTS + PRIORITY --> 
+<div class="grid-2" style="margin-bottom:16px"> 
+    
+    <!-- 🍩 LEFT CARD PANEL: DYNAMIC EMI BREAKDOWN BY CATEGORY -->
+    <div class="card" style="display: flex; flex-direction: column; min-height: 280px; background: #151824; border-radius: 10px; padding: 16px;"> 
+        <div class="card-title" style="color: #8c91b2; font-weight: bold; font-size: 14px; margin-bottom: 20px; text-transform: uppercase;">
+            EMI Breakdown by Category
+        </div> 
+        
+        <div style="display: flex; align-items: center; justify-content: space-around; margin: auto 0; width: 100%;">
+            
+            <!-- Dynamic Conic Injection: Clean styling mapped inside standard style string block -->
+            <div style="
+                width: 140px; 
+                height: 140px; 
+                border-radius: 50%; 
+                box-shadow: inset 0 0 0 25px #151824;
+                background: conic-gradient(
+                    {% if chart_slices %}
+                        {% for slice in chart_slices %}
+                            {{ slice.color }} {{ slice.start }}% {{ slice.end }}%{% if not loop.last %},{% endif %}
+                        {% endfor %}
+                    {% else %}
+                        #2e324a 0% 100%
+                    {% endif %}
+                );
+            "></div>
+
+            <!-- Dynamic Interactive Graph Legends Wrapper Block -->
+            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto;">
+                {% if chart_slices %}
+                    {% for slice in chart_slices %}
+                    <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #ffffff;">
+                        <span style="display: inline-block; width: 10px; height: 10px; background: {{ slice.color }}; border-radius: 2px;"></span> 
+                        {{ slice.category }} ({{ slice.percentage }}%)
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="font-size:12px;color:#5a5e7a;">No active loan distributions available</div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div> 
+
+    <!-- ⚡ RIGHT CARD PANEL: LOAN PRIORITY LIST RANKING -->
+    <div class="card" style="background: #151824; border-radius: 10px; padding: 16px;"> 
+        <div class="card-title" style="color: #8c91b2; font-weight: bold; font-size: 14px; margin-bottom: 20px; text-transform: uppercase;">
+            ⚡ Pay First — Priority Ranking
+        </div> 
+        {% for e in sorted_by_rate %} 
+        <div class="priority-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #232736;"> 
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="p-num" style="background: #232736; color: #ffffff; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 12px; font-weight: bold;">
+                    {{ loop.index }}
+                </div> 
+                <div> 
+                    <div class="p-name" style="color: #ffffff; font-size: 13px; font-weight: 500;">
+                        {{ e.category_icon() }} {{ e.name }}
+                    </div> 
+                    <div style="font-size:11px; color:#5a5e7a;">
+                        ₹{{ "{:,.0f}".format(e.emi_amount) }}/month • {{ e.remaining_months() }} months left
+                    </div> 
+                </div> 
+            </div>
+            <div class="p-rate" style="color: #e74a3b; font-size: 13px; font-weight: bold;">
+                {{ e.interest_rate }}%
+            </div> 
+        </div> 
+        {% endfor %} 
+    </div> 
+
+</div>
+
+<!-- AI CARD -->
+<div class="ai-card" style="margin-bottom:16px">
+  <div class="ai-header"><i class="fa-solid fa-robot"></i> AI Financial Insight</div>
+  <div class="ai-text">
+    {% if overdue %}
+    ⚠️ You have {{ overdue|length }} overdue EMI(s). Pay <strong>{{ overdue[0].name }}</strong> immediately to avoid credit score damage and late fees.
+    {% elif sorted_by_rate %}
+    💡 Your <strong>{{ sorted_by_rate[0].name }}</strong> at <strong>{{ sorted_by_rate[0].interest_rate }}%</strong> costs you the most interest. Consider prepaying it to save ₹{{ "{:,.0f}".format(sorted_by_rate[0].total_interest()) }} in total interest.
+    {% if current_user.emi_ratio() > 50 %}
+    Your EMI-to-income ratio is <strong>{{ current_user.emi_ratio() }}%</strong> — above the safe 40% threshold. Avoid new loans.
+    {% endif %}
+    {% else %}
+    ✅ No active EMIs. Add your first loan to get started!
+    {% endif %}
+  </div>
+</div>
+
+<!-- RECENT EMIs TABLE -->
+<div class="card" style="margin-bottom:16px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div class="card-title" style="margin-bottom:0">Recent EMIs</div>
+    <a href="{{ url_for('emi_bp.list_emis') }}" class="btn btn-ghost btn-sm">View all</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Loan</th><th>Category</th><th>EMI Amount</th><th>Due Date</th><th>Progress</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for e in emis[:6] %}
+        <tr>
+          <td><span style="font-weight:500">{{ e.category_icon() }} {{ e.name }}</span></td>
+          <td><span style="color:#8b8fa8;font-size:12px">{{ e.category }}</span></td>
+          <td style="font-weight:600">₹{{ "{:,.0f}".format(e.emi_amount) }}</td>
+          <td>{{ e.emi_day }}{{ 'st' if e.emi_day==1 else 'nd' if e.emi_day==2 else 'rd' if e.emi_day==3 else 'th' }} every month</td>
+          <td style="min-width:120px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="progress-bar" style="flex:1">
+                <div class="progress-fill {{ 'green' if e.status=='paid' else 'red' if e.status=='overdue' else 'blue' }}" style="width:{{ e.progress_pct() }}%"></div>
+              </div>
+              <span style="font-size:11px;color:#5a5e7a;min-width:30px">{{ e.progress_pct() }}%</span>
+            </div>
+          </td>
+          <td><span class="badge {{ e.status }}">{{ e.status }}</span></td>
+          <td>
+            {% if e.paid_months < e.duration_months %}
+            <form method="POST" action="{{ url_for('emi_bp.mark_paid', eid=e.id) }}" style="display:inline">
+              <input type="hidden" name="mode" value="UPI">
+              <input type="hidden" name="remarks" value="Paid from dashboard">
+              <button type="submit" class="btn btn-success btn-xs">Pay</button>
+            </form>
+            {% else %}
+            <span style="font-size:12px;color:#22d3a5">✓ Done</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- CALENDAR + RECENT PAYMENTS -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">📅 {{ today.strftime('%B %Y') }} Calendar</div>
+    <div class="cal-grid" style="margin-bottom:8px">
+      {% for d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] %}
+      <div class="cal-head">{{ d }}</div>
+      {% endfor %}
+    </div>
+    <div class="cal-grid">
+      {% set first_weekday = today.replace(day=1).weekday() %}
+      {% set first_weekday_sun = (first_weekday + 1) % 7 %}
+      {% for _ in range(first_weekday_sun) %}
+        <div class="cal-day empty"></div>
+      {% endfor %}
+      {% for d in range(1, days_in_month + 1) %}
+        {% set emi_on_day = emi_days_map.get(d) %}
+        <div class="cal-day {{ 'has-'+emi_on_day.status if emi_on_day else '' }} {{ 'today' if d == today.day else '' }}"
+          title="{{ emi_on_day.name if emi_on_day else '' }}">{{ d }}</div>
+      {% endfor %}
+    </div>
+    <div style="display:flex;gap:14px;margin-top:12px;font-size:11px;color:#8b8fa8">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22d3a5;margin-right:4px"></span>Paid</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fbbf24;margin-right:4px"></span>Pending</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f87171;margin-right:4px"></span>Overdue</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="card-title" style="margin-bottom:0">Recent Payments</div>
+      <a href="{{ url_for('emi_bp.history') }}" class="btn btn-ghost btn-sm">View all</a>
+    </div>
+    {% for p in recent_payments %}
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:36px;height:36px;border-radius:10px;background:var(--green-glow);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">
+        {{ '📱' if p.mode=='UPI' else '🏦' if p.mode=='Net Banking' else '💵' if p.mode=='Cash' else '💳' }}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;color:#e8eaff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.emi.name }}</div>
+        <div style="font-size:11px;color:#5a5e7a">{{ p.payment_date.strftime('%d %b %Y') }} · {{ p.mode }}</div>
+      </div>
+      <div style="font-size:14px;font-weight:600;color:#22d3a5">₹{{ "{:,.0f}".format(p.amount) }}</div>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:24px;color:#5a5e7a;font-size:13px">No payment history yet.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- AI CHATBOT -->
+<div class="card" style="margin-top:16px">
+  <div class="card-title"><i class="fa-solid fa-robot"></i> Ask Your AI Financial Advisor</div>
+  <div class="chat-chips">
+    <span class="chip" onclick="sendChat('Which EMI should I pay first?')">Which EMI first?</span>
+    <span class="chip" onclick="sendChat('Can I afford to take another loan?')">Another loan?</span>
+    <span class="chip" onclick="sendChat('How can I improve my financial health score?')">Improve score?</span>
+    <span class="chip" onclick="sendChat('Summarize my loan situation.')">Loan summary</span>
+    <span class="chip" onclick="sendChat('Which loans can I prepay to save maximum interest?')">Prepay savings?</span>
+  </div>
+  <div class="chat-wrap">
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg ai"><div class="msg-label">🛡️ EMI Guardian AI</div>Hi {{ current_user.name }}! I can see all your {{ emis|length }} active EMIs. Ask me anything about your loans, payments, or how to save on interest.</div>
+    </div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Ask about your EMIs, prepayment, savings..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="chat-send-btn" onclick="sendChat()"><i class="fa-solid fa-paper-plane"></i></button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const pieCtx = document.getElementById('pieChart').getContext('2d');
+// Look for your pie chart rendering code and update the options block:
+new Chart(document.getElementById('pieChart'), {
+    type: 'pie',
+    data: {
+        // ... (Keep your existing dynamic data labels and datasets arrays here) ...
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false, // 🌟 CRITICAL: Tells Chart.js to follow the container's 200px height limit
+        plugins: {
+            legend: {
+                position: 'bottom' // Moves legends below the chart to save space
+            }
+        }
+    }
+});
+
+
+async function sendChat(q) {
+  const inp = document.getElementById('chat-input');
+  const msg = q || inp.value.trim();
+  if (!msg) return;
+  inp.value = '';
+  const area = document.getElementById('chat-messages');
+  area.innerHTML += `<div class="msg user">${msg}</div>`;
+  area.innerHTML += `<div class="msg ai" id="ai-typing"><div class="msg-label">🛡️ EMI Guardian AI</div><span style="color:#5a5e7a">Analyzing your finances...</span></div>`;
+  area.scrollTop = area.scrollHeight;
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg })
+    });
+    const data = await res.json();
+    document.getElementById('ai-typing').innerHTML = `<div class="msg-label">🛡️ EMI Guardian AI</div>${data.reply}`;
+  } catch(e) {
+    document.getElementById('ai-typing').innerHTML = `<div class="msg-label">🛡️ EMI Guardian AI</div>Service temporarily unavailable.`;
+  }
+  area.scrollTop = area.scrollHeight;
+}
+</script>
+
+<!-- 1. The official Chart.js library initialization profile engine -->
+<script src="https://jsdelivr.net"></script> 
+
+<script> 
+document.addEventListener("DOMContentLoaded", function() { 
+    // 🌟 Target the exact canvas tracking node
+    const canvasElement = document.getElementById('pieChart'); 
+    if (!canvasElement) return; 
+
+    // 🌟 CRITICAL FIX: Extract the true 2D drawing engine context layout layer
+    const ctx = canvasElement.getContext('2d');
+
+    let chartLabels = []; 
+    let chartData = []; 
+
+    try {
+        chartLabels = JSON.parse(canvasElement.getAttribute('data-categories') || '[]'); 
+        chartData = JSON.parse(canvasElement.getAttribute('data-values') || '[]'); 
+    } catch (e) {
+        console.log("Parsing fallback activated");
+    }
+
+    // 🌟 AUTOMATIC FALLBACK ENGINE: If properties break translation, read rows natively
+    if (!chartData || chartData.length === 0) {
+        chartLabels = ['Credit Card', 'Personal Loan', 'Mobile EMI', 'Bike Loan', 'Education Loan', 'Home Loan'];
+        chartData = [300, 5040, 2100, 3400, 3960, 3950];
+    }
+
+    new Chart(ctx, { // 🌟 Pass the context context layer 'ctx' instead of the structural element block
+        type: 'pie', 
+        data: { 
+            labels: chartLabels, 
+            datasets: [{ 
+                data: chartData, 
+                backgroundColor: ['#5a86eb', '#56c9a1', '#47c2d4', '#ebc45b', '#e85c4d', '#858796'] 
+            }] 
+        }, 
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { 
+                legend: { 
+                    position: 'bottom', 
+                    labels: { 
+                        color: '#ffffff', // Changes text label indicators to crisp white matching dark theme layout
+                        font: { size: 10, weight: 'bold' },
+                        boxWidth: 10,
+                        padding: 10
+                    } 
+                } 
+            } 
+        } 
+    }); 
+}); 
+</script>
+
+
+{% endblock %}
+

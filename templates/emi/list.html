@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}My EMIs — EMI Guardian AI{% endblock %}
+{% block page_title %}My EMIs{% endblock %}
+{% block page_subtitle %}All your active loans in one place{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    {% for f, label in [('all','All'), ('pending','Pending'), ('paid','Paid'), ('overdue','Overdue')] %}
+    <a href="{{ url_for('emi_bp.list_emis', status=f) }}"
+       class="btn {{ 'btn-primary' if status==f else 'btn-ghost' }} btn-sm">
+      {{ label }}
+      {% if f == 'all' %}({{ emis|length }}){% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  <a href="{{ url_for('emi_bp.add_emi') }}" class="btn btn-primary btn-sm">
+    <i class="fa-solid fa-plus"></i> Add EMI
+  </a>
+</div>
+
+{% if emis %}
+<div style="display:flex;flex-direction:column;gap:14px">
+  {% for e in emis %}
+  <div class="card" style="padding:20px">
+    <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
+      <div style="width:50px;height:50px;border-radius:14px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;border:1px solid var(--border)">
+        {{ e.category_icon() }}
+      </div>
+      <div style="flex:1;min-width:220px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+          <span style="font-size:16px;font-weight:600;color:#e8eaff">{{ e.name }}</span>
+          <span class="badge {{ e.status }}">{{ e.status }}</span>
+          <span style="font-size:12px;color:#5a5e7a;background:var(--surface2);padding:2px 10px;border-radius:20px;border:1px solid var(--border)">{{ e.category }}</span>
+          {% if e.days_until_due() <= 3 and e.status != 'paid' %}
+          <span style="font-size:11px;background:rgba(251,191,36,0.12);color:#fbbf24;padding:2px 8px;border-radius:20px;border:1px solid rgba(251,191,36,0.2)">
+            ⚡ Due {{ 'TODAY' if e.days_until_due()==0 else 'in '+e.days_until_due()|string+' days' }}
+          </span>
+          {% endif %}
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:14px">
+          <div>
+            <div style="font-size:11px;color:#5a5e7a">Monthly EMI</div>
+            <div style="font-size:18px;font-weight:700;color:#4f7ef8">₹{{ "{:,.0f}".format(e.emi_amount) }}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#5a5e7a">Interest Rate</div>
+            <div style="font-size:18px;font-weight:700;color:{{ '#f87171' if e.interest_rate>15 else '#fbbf24' if e.interest_rate>10 else '#22d3a5' }}">{{ e.interest_rate }}%</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#5a5e7a">Loan Amount</div>
+            <div style="font-size:15px;font-weight:600;color:#e8eaff">₹{{ "{:,.0f}".format(e.loan_amount) }}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#5a5e7a">Remaining</div>
+            <div style="font-size:15px;font-weight:600;color:#e8eaff">₹{{ "{:,.0f}".format(e.remaining_amount()) }}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#5a5e7a">Months Left</div>
+            <div style="font-size:15px;font-weight:600;color:#e8eaff">{{ e.remaining_months() }} / {{ e.duration_months }}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#5a5e7a">Ends On</div>
+            <div style="font-size:15px;font-weight:600;color:#22d3a5">{{ e.end_date().strftime('%b %Y') }}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#5a5e7a">Total Interest</div>
+            <div style="font-size:15px;font-weight:600;color:#f87171">₹{{ "{:,.0f}".format(e.total_interest()) }}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#5a5e7a">EMI Day</div>
+            <div style="font-size:15px;font-weight:600;color:#e8eaff">{{ e.emi_day }}th every month</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="progress-bar" style="flex:1;height:8px">
+            <div class="progress-fill {{ 'green' if e.status=='paid' else 'red' if e.status=='overdue' else 'blue' }}" style="width:{{ e.progress_pct() }}%"></div>
+          </div>
+          <span style="font-size:12px;color:#8b8fa8;min-width:60px">{{ e.paid_months }}/{{ e.duration_months }} paid</span>
+        </div>
+
+        {% if e.notes %}
+        <div style="margin-top:10px;font-size:12px;color:#5a5e7a;background:var(--surface2);padding:8px 12px;border-radius:8px;border-left:3px solid var(--border2)">
+          📝 {{ e.notes }}
+        </div>
+        {% endif %}
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;min-width:100px">
+        {% if e.paid_months < e.duration_months %}
+        <button class="btn btn-success btn-sm" onclick="showPayModal({{ e.id }}, '{{ e.name }}', {{ e.emi_amount }})">
+          <i class="fa-solid fa-check"></i> Mark Paid
+        </button>
+        {% else %}
+        <span style="font-size:12px;color:#22d3a5;font-weight:600">✓ Completed</span>
+        {% endif %}
+        <form method="POST" action="{{ url_for('emi_bp.delete_emi', eid=e.id) }}"
+              onsubmit="return confirm('Remove {{ e.name }}? This cannot be undone.')">
+          <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i> Remove</button>
+        </form>
+        <div style="font-size:11px;color:#5a5e7a;text-align:right">
+          Next due:<br><strong style="color:#e8eaff">{{ e.next_due_date().strftime('%d %b %Y') }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:60px 24px">
+  <div style="font-size:52px;margin-bottom:16px">💰</div>
+  <div style="font-size:18px;font-weight:600;color:#e8eaff;margin-bottom:8px">No EMIs found</div>
+  <div style="font-size:14px;color:#5a5e7a;margin-bottom:24px">
+    {% if status != 'all' %}No {{ status }} EMIs right now.{% else %}You haven't added any loans yet.{% endif %}
+  </div>
+  <a href="{{ url_for('emi_bp.add_emi') }}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add your first EMI</a>
+</div>
+{% endif %}
+
+<!-- PAY MODAL -->
+<div id="pay-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999;align-items:center;justify-content:center;backdrop-filter:blur(6px)">
+  <div style="background:#13152a;border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:28px;width:380px;max-width:95vw">
+    <div style="font-size:17px;font-weight:600;color:#e8eaff;margin-bottom:4px">Record Payment</div>
+    <div style="font-size:13px;color:#5a5e7a;margin-bottom:20px" id="pay-subtitle"></div>
+    <form method="POST" id="pay-form">
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Payment Mode</label>
+        <select class="form-control" name="mode">
+          <option value="UPI">📱 UPI</option>
+          <option value="Net Banking">🏦 Net Banking</option>
+          <option value="Cash">💵 Cash</option>
+          <option value="Credit Card">💳 Credit Card</option>
+          <option value="Debit Card">💳 Debit Card</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:20px">
+        <label>Remarks (optional)</label>
+        <input type="text" class="form-control" name="remarks" placeholder="e.g. On time, Auto-debit">
+      </div>
+      <div style="display:flex;gap:10px">
+        <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center">
+          <i class="fa-solid fa-check"></i> Confirm Payment
+        </button>
+        <button type="button" class="btn btn-ghost" onclick="closePayModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showPayModal(id, name, amt) {
+  document.getElementById('pay-subtitle').textContent = name + ' — ₹' + amt.toLocaleString('en-IN');
+  document.getElementById('pay-form').action = '/emis/' + id + '/pay';
+  document.getElementById('pay-modal').style.display = 'flex';
+}
+function closePayModal() {
+  document.getElementById('pay-modal').style.display = 'none';
+}
+document.getElementById('pay-modal').addEventListener('click', function(e) {
+  if (e.target === this) closePayModal();
+});
+</script>
+{% endblock %}

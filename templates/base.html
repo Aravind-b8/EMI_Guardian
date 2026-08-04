@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}EMI Guardian AI{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0a0b14;
+  --bg2: #0f1020;
+  --surface: #13152a;
+  --surface2: #1a1d35;
+  --surface3: #222540;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --blue: #4f7ef8;
+  --blue2: #6b93fa;
+  --blue-glow: rgba(79,126,248,0.15);
+  --green: #22d3a5;
+  --green-glow: rgba(34,211,165,0.15);
+  --red: #f87171;
+  --red-glow: rgba(248,113,113,0.12);
+  --amber: #fbbf24;
+  --amber-glow: rgba(251,191,36,0.12);
+  --purple: #a78bfa;
+  --text: #e8eaff;
+  --text2: #8b8fa8;
+  --text3: #5a5e7a;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --sidebar-w: 240px;
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  overflow-x: hidden;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: var(--sidebar-w);
+  min-height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  transition: transform var(--transition);
+}
+.sidebar-logo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.logo-text { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.1; }
+.logo-text span { color: var(--blue2); }
+.logo-tagline { font-size: 10px; color: var(--text3); margin-top: 2px; }
+.nav-section { padding: 16px 12px 8px; }
+.nav-label { font-size: 10px; font-weight: 600; letter-spacing: 1.2px; color: var(--text3); text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: var(--radius-sm);
+  color: var(--text2); font-size: 13.5px; font-weight: 450;
+  text-decoration: none; margin-bottom: 2px;
+  transition: all var(--transition); position: relative;
+}
+.nav-item i { width: 18px; text-align: center; font-size: 14px; }
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active {
+  background: var(--blue-glow);
+  color: var(--blue2);
+  border: 1px solid rgba(79,126,248,0.2);
+}
+.nav-item.active i { color: var(--blue); }
+.nav-badge {
+  margin-left: auto; background: var(--red); color: #fff;
+  font-size: 10px; font-weight: 700; padding: 1px 6px;
+  border-radius: 10px; min-width: 18px; text-align: center;
+}
+.sidebar-footer {
+  margin-top: auto; padding: 16px 12px;
+  border-top: 1px solid var(--border);
+}
+.user-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px; border-radius: var(--radius-sm);
+  background: var(--surface2); cursor: pointer;
+  transition: background var(--transition);
+}
+.user-card:hover { background: var(--surface3); }
+.avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; flex-shrink: 0; color: #fff;
+}
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role { font-size: 11px; color: var(--text3); }
+
+/* MAIN */
+.main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(10,11,20,0.85); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.page-title { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; color: var(--text); }
+.page-subtitle { font-size: 12px; color: var(--text3); margin-top: 1px; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.icon-btn {
+  width: 36px; height: 36px; border-radius: 50%; background: var(--surface2);
+  border: 1px solid var(--border); display: flex; align-items: center;
+  justify-content: center; cursor: pointer; color: var(--text2);
+  transition: all var(--transition); text-decoration: none; font-size: 14px;
+}
+.icon-btn:hover { background: var(--surface3); color: var(--text); border-color: var(--border2); }
+.content { padding: 24px 28px; flex: 1; }
+
+/* CARDS */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.card-sm { padding: 14px 16px; border-radius: var(--radius-sm); }
+.card-title { font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 14px; text-transform: uppercase; letter-spacing: .5px; }
+
+/* STAT CARDS */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 20px;
+  position: relative; overflow: hidden; transition: border-color var(--transition);
+}
+.stat-card:hover { border-color: var(--border2); }
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.stat-card.blue::before { background: linear-gradient(90deg, var(--blue), var(--blue2)); }
+.stat-card.green::before { background: linear-gradient(90deg, var(--green), #34d399); }
+.stat-card.red::before { background: linear-gradient(90deg, var(--red), #fb7185); }
+.stat-card.amber::before { background: linear-gradient(90deg, var(--amber), #f59e0b); }
+.stat-card.purple::before { background: linear-gradient(90deg, var(--purple), #c084fc); }
+.stat-icon {
+  width: 38px; height: 38px; border-radius: 10px; margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 17px;
+}
+.stat-icon.blue { background: var(--blue-glow); color: var(--blue2); }
+.stat-icon.green { background: var(--green-glow); color: var(--green); }
+.stat-icon.red { background: var(--red-glow); color: var(--red); }
+.stat-icon.amber { background: var(--amber-glow); color: var(--amber); }
+.stat-icon.purple { background: rgba(167,139,250,0.12); color: var(--purple); }
+.stat-val { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; }
+.stat-label { font-size: 12px; color: var(--text3); margin-top: 5px; }
+.stat-sub { font-size: 11.5px; color: var(--text2); margin-top: 4px; }
+
+/* GRIDS */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+/* BADGES */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: .3px;
+}
+.badge.paid { background: var(--green-glow); color: var(--green); border: 1px solid rgba(34,211,165,0.2); }
+.badge.pending { background: var(--amber-glow); color: var(--amber); border: 1px solid rgba(251,191,36,0.2); }
+.badge.overdue { background: var(--red-glow); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+.badge.upcoming { background: var(--blue-glow); color: var(--blue2); border: 1px solid rgba(79,126,248,0.2); }
+.badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+/* BUTTONS */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border-radius: var(--radius-sm);
+  font-size: 13.5px; font-weight: 500; cursor: pointer;
+  border: 1px solid transparent; transition: all var(--transition);
+  text-decoration: none; white-space: nowrap;
+}
+.btn-primary {
+  background: var(--blue); color: #fff; border-color: var(--blue);
+}
+.btn-primary:hover { background: var(--blue2); box-shadow: 0 4px 20px var(--blue-glow); }
+.btn-ghost {
+  background: var(--surface2); color: var(--text2); border-color: var(--border);
+}
+.btn-ghost:hover { background: var(--surface3); color: var(--text); }
+.btn-danger { background: var(--red-glow); color: var(--red); border-color: rgba(248,113,113,0.2); }
+.btn-success { background: var(--green-glow); color: var(--green); border-color: rgba(34,211,165,0.2); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-xs { padding: 3px 9px; font-size: 11px; border-radius: 6px; }
+
+/* TABLE */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead th { padding: 10px 14px; font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .6px; border-bottom: 1px solid var(--border); text-align: left; }
+tbody td { padding: 13px 14px; font-size: 13.5px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr { transition: background var(--transition); }
+tbody tr:hover td { background: var(--surface2); }
+
+/* FORMS */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 12px; font-weight: 500; color: var(--text2); }
+.form-control {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  color: var(--text); font-size: 13.5px; font-family: inherit;
+  transition: border-color var(--transition); width: 100%;
+}
+.form-control:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-glow); }
+.form-control::placeholder { color: var(--text3); }
+select.form-control { cursor: pointer; }
+option { background: var(--surface2); }
+
+/* PROGRESS */
+.progress-bar { height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+.progress-fill.blue { background: linear-gradient(90deg, var(--blue), var(--blue2)); }
+.progress-fill.green { background: linear-gradient(90deg, var(--green), #34d399); }
+.progress-fill.red { background: linear-gradient(90deg, var(--red), #fb7185); }
+.progress-fill.amber { background: linear-gradient(90deg, var(--amber), #f59e0b); }
+
+/* ALERTS / FLASH */
+.flash-container { position: fixed; top: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 8px; max-width: 340px; }
+.flash-msg {
+  padding: 12px 16px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500;
+  display: flex; align-items: center; gap: 10px;
+  animation: slideIn 0.3s ease; border: 1px solid;
+}
+.flash-msg.success { background: var(--green-glow); color: var(--green); border-color: rgba(34,211,165,0.2); }
+.flash-msg.danger { background: var(--red-glow); color: var(--red); border-color: rgba(248,113,113,0.2); }
+.flash-msg.info { background: var(--blue-glow); color: var(--blue2); border-color: rgba(79,126,248,0.2); }
+@keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+/* HEALTH SCORE RING */
+.health-ring-wrap { display: flex; align-items: center; gap: 16px; }
+.score-ring { position: relative; width: 70px; height: 70px; }
+.score-ring svg { transform: rotate(-90deg); }
+.score-ring .score-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: var(--text); }
+
+/* AI CARD */
+.ai-card {
+  background: linear-gradient(135deg, rgba(79,126,248,0.08), rgba(167,139,250,0.06));
+  border: 1px solid rgba(79,126,248,0.2);
+  border-radius: var(--radius); padding: 16px 18px;
+}
+.ai-header { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--blue2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.ai-text { font-size: 13.5px; color: var(--text2); line-height: 1.6; }
+
+/* PRIORITY ROWS */
+.priority-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.priority-item:last-child { border: none; }
+.p-num { width: 24px; height: 24px; border-radius: 50%; background: var(--blue-glow); color: var(--blue2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.p-name { flex: 1; font-size: 13px; color: var(--text); }
+.p-rate { font-size: 12px; font-weight: 600; color: var(--red); padding: 2px 8px; background: var(--red-glow); border-radius: 20px; }
+
+/* UPCOMING ALERT */
+.upcoming-alert {
+  background: linear-gradient(135deg, rgba(251,191,36,0.08), rgba(251,191,36,0.03));
+  border: 1px solid rgba(251,191,36,0.2);
+  border-radius: var(--radius); padding: 14px 16px;
+  display: flex; align-items: center; gap: 14px;
+}
+.upcoming-icon { font-size: 26px; }
+
+/* CHAT */
+.chat-wrap { display: flex; flex-direction: column; height: 320px; }
+.chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 14px; background: var(--bg2); border-radius: var(--radius-sm) var(--radius-sm) 0 0; border: 1px solid var(--border); border-bottom: none; }
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+.msg { max-width: 82%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.55; }
+.msg.user { align-self: flex-end; background: var(--blue); color: #fff; border-radius: 12px 12px 2px 12px; }
+.msg.ai { align-self: flex-start; background: var(--surface2); color: var(--text); border: 1px solid var(--border2); border-radius: 12px 12px 12px 2px; }
+.msg-label { font-size: 10px; color: var(--blue2); margin-bottom: 4px; font-weight: 600; }
+.chat-input-row { display: flex; border: 1px solid var(--border); border-radius: 0 0 var(--radius-sm) var(--radius-sm); overflow: hidden; }
+.chat-input-row input { flex: 1; padding: 12px 16px; background: var(--surface2); border: none; color: var(--text); font-size: 13px; font-family: inherit; }
+.chat-input-row input:focus { outline: none; }
+.chat-send-btn { padding: 0 18px; background: var(--blue); color: #fff; border: none; cursor: pointer; font-size: 15px; transition: background var(--transition); }
+.chat-send-btn:hover { background: var(--blue2); }
+.chat-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.chip { padding: 5px 12px; border-radius: 20px; font-size: 12px; background: var(--surface2); border: 1px solid var(--border); cursor: pointer; color: var(--text2); transition: all var(--transition); }
+.chip:hover { background: var(--blue-glow); color: var(--blue2); border-color: rgba(79,126,248,0.3); }
+
+/* CALENDAR */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-head { text-align: center; padding: 6px; font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
+.cal-day { text-align: center; padding: 8px 4px; border-radius: 8px; font-size: 12.5px; position: relative; cursor: default; min-height: 36px; display: flex; align-items: center; justify-content: center; }
+.cal-day.empty { opacity: 0; pointer-events: none; }
+.cal-day.today { outline: 2px solid var(--blue); outline-offset: -2px; }
+.cal-day.has-paid { background: var(--green-glow); color: var(--green); font-weight: 600; }
+.cal-day.has-pending { background: var(--amber-glow); color: var(--amber); font-weight: 600; }
+.cal-day.has-overdue { background: var(--red-glow); color: var(--red); font-weight: 600; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .grid-2, .grid-3, .form-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🛡️</div>
+    <div>
+      <div class="logo-text">EMI <span>Guardian</span></div>
+      <div class="logo-tagline">Never miss an EMI again</div>
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Main</div>
+    <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+      <i class="fa-solid fa-gauge-high"></i> Dashboard
+    </a>
+    <a href="{{ url_for('emi_bp.list_emis') }}" class="nav-item {% if request.endpoint == 'emi.list_emis' %}active{% endif %}">
+      <i class="fa-solid fa-list-check"></i> My EMIs
+      {% if overdue_count is defined and overdue_count > 0 %}
+        <span class="nav-badge">{{ overdue_count }}</span>
+      {% endif %}
+    </a>
+    <a href="{{ url_for('emi_bp.add_emi') }}" class="nav-item {% if request.endpoint == 'emi.add_emi' %}active{% endif %}">
+      <i class="fa-solid fa-plus"></i> Add EMI
+    </a>
+    <a href="{{ url_for('emi_bp.calculator') }}" class="nav-item {% if request.endpoint == 'emi.calculator' %}active{% endif %}">
+      <i class="fa-solid fa-calculator"></i> Calculator
+    </a>
+  </div>
+  <div class="nav-section"> 
+    <div class="nav-label">Insights</div> 
+    
+    <!-- 1. Payment History Link -->
+    <a href="{{ url_for('emi_bp.history') }}" class="nav-item {% if request.endpoint == 'emi_bp.history' %}active{% endif %}"> 
+        <i class="fa-solid fa-clock-rotate-left"></i> Payment History 
+    </a> 
+    
+    <!-- 2. AI Chatbot Advisor Link --> 
+    <!-- 🌟 THE FAIL-PROOF FLASK ROUTE LINK: Let Flask generate the correct IP and port for you -->
+    <!-- 🌟 THE ABSOLUTE SOLUTION PATH: Completely removes url_for to prevent server runtime crashes -->
+    <!-- 🌟 THE CRASH-PROOF ENDPOINT LINK: Points to your active notification blueprint -->
+    <!-- 🌟 THE ABSOLUTE SOLUTION PATH: Removes url_for completely to stop routing crashes -->
+     <!-- 🌟 THE CRASH-PROOF HARDCODED LINK: Points directly to the correct URL path -->
+    <!-- 🌟 THE CRASH-PROOF LINK: Points directly to your verified emi_bp blueprint -->
+    <!-- 🌟 THE ABSOLUTE SOLUTION PATH: Completely removes url_for to prevent server layout crashes -->
+    <!-- 🌟 FIXED STRUCTURAL NAVIGATION LINK: Clean, absolute path free from namespace crashes -->
+<!-- 🌟 FAIL-PROOF NAVIGATION LINK: Maps directly to the core application route -->
+<a href="/api/ai-advisor" class="nav-item {% if 'ai-advisor' in request.path %}active{% endif %}">
+    <i class="fa-solid fa-robot"></i> AI Advisor
+</a>
+
+
+
+
+
+
+    
+    <!-- 3. FIXED: Settings Link mapping to your verified dashboard namespace 🌟 -->
+    <!-- 🌟 FIXED SETTINGS LINK: Points directly to your operational profile configuration dashboard -->
+<a href="{{ url_for('dashboard.profile') }}" class="nav-item {% if request.endpoint == 'dashboard.profile' %}active{% endif %}">
+    <i class="fa-solid fa-sliders"></i> Settings
+</a>
+
+</div>
+
+
+  {% if current_user.is_admin %}
+  <div class="nav-section">
+    <div class="nav-label">Admin</div>
+    <a href="{{ url_for('admin.index') }}" class="nav-item {% if request.blueprint == 'admin' %}active{% endif %}">
+      <i class="fa-solid fa-shield-halved"></i> Admin Panel
+    </a>
+  </div>
+  {% endif %}
+  <div class="sidebar-footer">
+    <a href="{{ url_for('dashboard.profile') }}" class="user-card" style="text-decoration:none">
+      <div class="avatar">{{ current_user.name[0].upper() }}</div>
+      <div class="user-info">
+        <div class="user-name">{{ current_user.name }}</div>
+        <div class="user-role">{{ 'Administrator' if current_user.is_admin else 'User' }}</div>
+      </div>
+      <i class="fa-solid fa-chevron-right" style="color:var(--text3);font-size:11px"></i>
+    </a>
+    <a href="{{ url_for('auth.logout') }}" class="nav-item" style="margin-top:6px;color:var(--red)">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+    </a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title">{% block page_title %}Dashboard{% endblock %}</div>
+      <div class="page-subtitle">{% block page_subtitle %}{% endblock %}</div>
+    </div>
+    <div class="topbar-right">
+      <a href="{{ url_for('emi_bp.add_emi') }}" class="btn btn-primary btn-sm">
+        <i class="fa-solid fa-plus"></i> Add EMI
+      </a>
+      <a href="{{ url_for('dashboard.profile') }}" class="icon-btn" title="Settings">
+        <i class="fa-solid fa-gear"></i>
+      </a>
+      <a href="{{ url_for('auth.logout') }}" class="icon-btn" title="Logout">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </a>
+    </div>
+  </div>
+
+  <div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash-msg {{ category }}">
+          <i class="fa-solid fa-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+
+  <div class="content">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<script>
+setTimeout(() => {
+  document.querySelectorAll('.flash-msg').forEach(el => {
+    el.style.transition = 'opacity 0.5s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 500);
+  });
+}, 3500);
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

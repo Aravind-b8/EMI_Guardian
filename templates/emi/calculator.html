@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}EMI Calculator — EMI Guardian AI{% endblock %}
+{% block page_title %}EMI Calculator{% endblock %}
+{% block page_subtitle %}Calculate EMI, total interest, and repayment schedule{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Loan Parameters</div>
+    <div class="form-group" style="margin-bottom:20px">
+      <label>Loan Amount: <strong id="lbl-amt" style="color:#4f7ef8">₹2,00,000</strong></label>
+      <input type="range" id="sl-amt" min="1000" max="5000000" step="10000" value="200000" oninput="updateCalc()" style="width:100%;accent-color:#4f7ef8;cursor:pointer;margin-top:8px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#5a5e7a;margin-top:4px"><span>₹1K</span><span>₹50L</span></div>
+    </div>
+    <div class="form-group" style="margin-bottom:20px">
+      <label>Interest Rate: <strong id="lbl-rate" style="color:#f87171">11%</strong> per annum</label>
+      <input type="range" id="sl-rate" min="1" max="36" step="0.5" value="11" oninput="updateCalc()" style="width:100%;accent-color:#f87171;cursor:pointer;margin-top:8px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#5a5e7a;margin-top:4px"><span>1%</span><span>36%</span></div>
+    </div>
+    <div class="form-group" style="margin-bottom:20px">
+      <label>Tenure: <strong id="lbl-dur" style="color:#22d3a5">24 months</strong></label>
+      <input type="range" id="sl-dur" min="3" max="360" step="3" value="24" oninput="updateCalc()" style="width:100%;accent-color:#22d3a5;cursor:pointer;margin-top:8px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#5a5e7a;margin-top:4px"><span>3m</span><span>30 yrs</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+        <div style="font-size:11px;color:#5a5e7a">Monthly EMI</div>
+        <div style="font-size:24px;font-weight:700;color:#4f7ef8" id="r-emi">₹4,356</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+        <div style="font-size:11px;color:#5a5e7a">Total Interest</div>
+        <div style="font-size:24px;font-weight:700;color:#f87171" id="r-int">₹26,544</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+        <div style="font-size:11px;color:#5a5e7a">Total Payment</div>
+        <div style="font-size:20px;font-weight:700;color:#e8eaff" id="r-total">₹2,26,544</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+        <div style="font-size:11px;color:#5a5e7a">Loan Ends</div>
+        <div style="font-size:20px;font-weight:700;color:#22d3a5" id="r-end">Jul 2028</div>
+      </div>
+    </div>
+    <a href="{{ url_for('emi_bp.add_emi') }}" class="btn btn-primary" style="width:100%;margin-top:14px;justify-content:center">
+      <i class="fa-solid fa-plus"></i> Add This Loan
+    </a>
+  </div>
+
+  <div> 
+    <!-- 🍩 PAYMENT BREAKDOWN CARD -->
+    <div class="card" style="margin-bottom:14px; min-height: 260px;"> 
+        <div class="card-title">Payment Breakdown</div> 
+        
+        <!-- 🌟 FIXED CANVAS: Added explicit maximum dimensions directly to the element -->
+        <canvas id="donut-chart" style="max-height: 180px !important; width: 100%; display: block;"></canvas> 
+        
+        <div style="display:flex;gap:20px;justify-content:center;margin-top:12px;font-size:12px"> 
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#4f7ef8;margin-right:5px"></span>Principal</span> 
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f87171;margin-right:5px"></span>Interest</span> 
+        </div> 
+    </div> 
+
+    <!-- 📊 YEARLY AMORTIZATION CARD -->
+    <div class="card" style="min-height: 220px;"> 
+        <div class="card-title">Yearly Amortization</div> 
+        
+        <!-- 🌟 FIXED CANVAS: Added explicit maximum dimensions directly to the element -->
+        <canvas id="amort-chart" style="max-height: 160px !important; width: 100%; display: block;"></canvas> 
+    </div> 
+</div>
+
+</div>
+
+<!-- SCHEDULE TABLE -->
+<div class="card" style="margin-top:16px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div class="card-title" style="margin-bottom:0">Repayment Schedule</div>
+    <span style="font-size:12px;color:#5a5e7a">First 12 months shown</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Month</th><th>EMI</th><th>Principal</th><th>Interest</th><th>Balance</th></tr></thead>
+      <tbody id="schedule-table"></tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let donutChart, amortChart;
+
+function calcEMI(P, r, n) {
+  const R = r / (12 * 100);
+  if (R === 0) return P / n;
+  return P * R * Math.pow(1+R, n) / (Math.pow(1+R, n) - 1);
+}
+function fmtINR(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
+
+function updateCalc() {
+  const P = +document.getElementById('sl-amt').value;
+  const r = +document.getElementById('sl-rate').value;
+  const n = +document.getElementById('sl-dur').value;
+
+  document.getElementById('lbl-amt').textContent = fmtINR(P);
+  document.getElementById('lbl-rate').textContent = r + '%';
+  document.getElementById('lbl-dur').textContent = n >= 12 ? Math.floor(n/12) + 'y ' + (n%12) + 'm' : n + ' months';
+
+  const emi = calcEMI(P, r, n);
+  const total = emi * n;
+  const interest = total - P;
+  document.getElementById('r-emi').textContent = fmtINR(emi);
+  document.getElementById('r-int').textContent = fmtINR(interest);
+  document.getElementById('r-total').textContent = fmtINR(total);
+  const end = new Date();
+  end.setMonth(end.getMonth() + n);
+  document.getElementById('r-end').textContent = end.toLocaleDateString('en-IN', { month:'short', year:'numeric' });
+
+  // Donut
+  const dCtx = document.getElementById('donut-chart').getContext('2d');
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(dCtx, {
+    type: 'doughnut',
+    data: { labels: ['Principal', 'Interest'], datasets: [{ data: [Math.round(P), Math.round(interest)], backgroundColor: ['#4f7ef8', '#f87171'], borderWidth: 0, hoverOffset: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${fmtINR(ctx.parsed)}` } } }, cutout: '60%' }
+  });
+
+  // Yearly amortization
+  const years = Math.ceil(n / 12);
+  const yearLabels = [], yearPrincipal = [], yearInterest = [];
+  let balance = P;
+  for (let y = 1; y <= Math.min(years, 10); y++) {
+    const months = Math.min(12, n - (y-1)*12);
+    let yp = 0, yi = 0;
+    for (let m = 0; m < months; m++) {
+      const iPayment = balance * (r/(12*100));
+      const pPayment = emi - iPayment;
+      yp += pPayment; yi += iPayment;
+      balance = Math.max(0, balance - pPayment);
+    }
+    yearLabels.push('Y' + y);
+    yearPrincipal.push(Math.round(yp));
+    yearInterest.push(Math.round(yi));
+  }
+  const aCtx = document.getElementById('amort-chart').getContext('2d');
+  if (amortChart) amortChart.destroy();
+  amortChart = new Chart(aCtx, {
+    type: 'bar',
+    data: {
+      labels: yearLabels,
+      datasets: [
+        { label: 'Principal', data: yearPrincipal, backgroundColor: '#4f7ef8', borderRadius: 4, borderWidth: 0 },
+        { label: 'Interest', data: yearInterest, backgroundColor: '#f87171', borderRadius: 4, borderWidth: 0 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8b8fa8', font: { size: 11 } } } },
+      scales: {
+        x: { stacked: true, ticks: { color: '#8b8fa8' }, grid: { display: false } },
+        y: { stacked: true, ticks: { callback: v => '₹' + Math.round(v/1000) + 'k', color: '#5a5e7a' }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+
+  // Schedule table
+  const tb = document.getElementById('schedule-table');
+  tb.innerHTML = '';
+  let bal = P;
+  const now = new Date();
+  for (let i = 1; i <= Math.min(12, n); i++) {
+    const iP = bal * (r/(12*100));
+    const pP = emi - iP;
+    bal = Math.max(0, bal - pP);
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    tb.innerHTML += `<tr>
+      <td style="color:#5a5e7a">${i}</td>
+      <td>${d.toLocaleDateString('en-IN',{month:'short',year:'numeric'})}</td>
+      <td style="font-weight:500">${fmtINR(emi)}</td>
+      <td style="color:#4f7ef8">${fmtINR(pP)}</td>
+      <td style="color:#f87171">${fmtINR(iP)}</td>
+      <td style="color:#22d3a5">${fmtINR(bal)}</td>
+    </tr>`;
+  }
+}
+updateCalc();
+</script>
+
+
+{% endblock %}

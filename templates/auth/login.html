@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — EMI Guardian AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#0a0b14;color:#e8eaff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-wrapper{display:grid;grid-template-columns:1fr 1fr;min-height:580px;max-width:900px;width:100%;border-radius:20px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,0.6)}
+.auth-left{background:linear-gradient(135deg,#0f1536 0%,#0a0b20 50%,#0f1536 100%);padding:48px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.06);border-right:none}
+.auth-left::before{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(79,126,248,0.12),transparent 70%);top:-100px;right:-100px;pointer-events:none}
+.auth-left::after{content:'';position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(167,139,250,0.08),transparent 70%);bottom:-50px;left:-80px;pointer-events:none}
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:48px}
+.brand-icon{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#4f7ef8,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:24px}
+.brand-name{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#e8eaff}
+.brand-name span{color:#6b93fa}
+.hero-title{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;line-height:1.2;margin-bottom:16px;color:#e8eaff}
+.hero-title em{color:#4f7ef8;font-style:normal}
+.hero-sub{font-size:14px;color:#5a5e7a;line-height:1.7;margin-bottom:36px}
+.feature-list{display:flex;flex-direction:column;gap:12px}
+.feature{display:flex;align-items:center;gap:10px;font-size:13px;color:#8b8fa8}
+.feature i{width:28px;height:28px;border-radius:8px;background:rgba(79,126,248,0.12);color:#4f7ef8;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.auth-right{background:#0f1020;padding:48px;display:flex;flex-direction:column;justify-content:center;border:1px solid rgba(255,255,255,0.06);border-left:none}
+.auth-title{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#e8eaff;margin-bottom:4px}
+.auth-sub{font-size:13px;color:#5a5e7a;margin-bottom:32px}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.form-group label{font-size:12px;font-weight:500;color:#8b8fa8}
+.form-control{background:#13152a;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 16px;color:#e8eaff;font-size:14px;font-family:inherit;width:100%;transition:border-color 0.2s}
+.form-control:focus{outline:none;border-color:#4f7ef8;box-shadow:0 0 0 3px rgba(79,126,248,0.15)}
+.form-control::placeholder{color:#3a3d5c}
+.btn-primary{width:100%;padding:13px;background:#4f7ef8;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;margin-top:8px}
+.btn-primary:hover{background:#6b93fa;box-shadow:0 4px 20px rgba(79,126,248,0.3)}
+.auth-footer{text-align:center;margin-top:20px;font-size:13px;color:#5a5e7a}
+.auth-footer a{color:#4f7ef8;text-decoration:none;font-weight:500}
+.divider{display:flex;align-items:center;gap:10px;margin:20px 0;color:#3a3d5c;font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06)}
+.demo-box{background:#13152a;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;margin-top:20px}
+.demo-title{font-size:11px;font-weight:600;color:#5a5e7a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.demo-row{display:flex;justify-content:space-between;font-size:12px;color:#8b8fa8;margin-bottom:4px}
+.demo-val{color:#4f7ef8;font-family:monospace}
+.flash-msg{padding:10px 14px;border-radius:8px;font-size:13px;font-weight:500;margin-bottom:14px;border:1px solid}
+.flash-msg.danger{background:rgba(248,113,113,0.08);color:#f87171;border-color:rgba(248,113,113,0.2)}
+@media(max-width:680px){.auth-wrapper{grid-template-columns:1fr}.auth-left{display:none}}
+</style>
+</head>
+<body>
+<div class="auth-wrapper">
+  <div class="auth-left">
+    <div class="brand">
+      <div class="brand-icon">🛡️</div>
+      <div class="brand-name">EMI <span>Guardian</span> AI</div>
+    </div>
+    <h1 class="hero-title">Never miss an <em>EMI</em> again.</h1>
+    <p class="hero-sub">AI-powered loan tracking with smart reminders, priority ranking, and financial health scoring — all in one place.</p>
+    <div class="feature-list">
+      <div class="feature"><i class="fa-solid fa-robot"></i> AI financial advisor built-in</div>
+      <div class="feature"><i class="fa-solid fa-bell"></i> Email & WhatsApp reminders</div>
+      <div class="feature"><i class="fa-solid fa-chart-line"></i> Visual analytics & forecasting</div>
+      <div class="feature"><i class="fa-solid fa-shield-halved"></i> Secure & encrypted data</div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <h2 class="auth-title">Welcome back</h2>
+    <p class="auth-sub">Sign in to your account</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash-msg {{ cat }}"><i class="fa-solid fa-exclamation-circle"></i> {{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+    <form method="POST">
+      <div class="form-group">
+        <label>Email address</label>
+        <input class="form-control" type="email" name="email" placeholder="you@email.com" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input class="form-control" type="password" name="password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn-primary">Sign in <i class="fa-solid fa-arrow-right"></i></button>
+    </form>
+    <div class="auth-footer">
+      Don't have an account? <a href="{{ url_for('auth.register') }}">Create one free</a>
+    </div>
+    <div class="demo-box">
+      <div class="demo-title">🧪 Demo credentials</div>
+      <div class="demo-row">User: <span class="demo-val">rolex@email.com / rolex123</span></div>
+      <div class="demo-row">Admin: <span class="demo-val">admin@emiguardian.com / admin123</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

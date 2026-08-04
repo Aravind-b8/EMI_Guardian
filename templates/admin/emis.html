@@ -1,0 +1,56 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}All EMIs — Admin{% endblock %}
+{% block page_title %}All EMIs{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+  <div style="font-size:13px;color:var(--text3)">{{ emis|length }} active EMIs across platform</div>
+  <input class="search-input" type="text" placeholder="🔍 Search EMIs..." oninput="filterTable(this,'emis-table')">
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table id="emis-table">
+      <thead><tr><th>Loan</th><th>User</th><th>Category</th><th>EMI</th><th>Rate</th><th>Progress</th><th>Remaining</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for e in emis %}
+        <tr>
+          <td><span style="font-weight:500;color:var(--text)">{{ e.category_icon() }} {{ e.name }}</span></td>
+          <td>
+            <a href="{{ url_for('admin.user_detail', uid=e.user_id) }}" style="color:#7c3aed;text-decoration:none;font-size:12.5px">{{ e.user.name }}</a>
+          </td>
+          <td style="color:var(--text3);font-size:12px">{{ e.category }}</td>
+          <td style="font-weight:600;color:var(--text)">₹{{ "{:,.0f}".format(e.emi_amount) }}</td>
+          <td><span style="color:{{ '#ef4444' if e.interest_rate>15 else '#f59e0b' if e.interest_rate>10 else '#10b981' }};font-weight:600">{{ e.interest_rate }}%</span></td>
+          <td style="min-width:110px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="progress-bar" style="flex:1">
+                <div class="pf {{ 'g' if e.status=='paid' else 'r' if e.status=='overdue' else 'b' }}" style="width:{{ e.progress_pct() }}%"></div>
+              </div>
+              <span style="font-size:11px;color:var(--text3)">{{ e.paid_months }}/{{ e.duration_months }}</span>
+            </div>
+          </td>
+          <td style="color:var(--text2)">₹{{ "{:,.0f}".format(e.remaining_amount()) }}</td>
+          <td><span class="badge {{ e.status }}">{{ e.status }}</span></td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.delete_emi', eid=e.id) }}" onsubmit="return confirm('Remove this EMI?')">
+              <button type="submit" class="btn btn-r btn-xs"><i class="fa-solid fa-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterTable(inp, tableId) {
+  const q = inp.value.toLowerCase();
+  document.querySelectorAll(`#${tableId} tbody tr`).forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

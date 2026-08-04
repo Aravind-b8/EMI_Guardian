@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Admin — EMI Guardian{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#080910;--bg2:#0d0f1a;--surface:#111320;--surface2:#181a2e;--surface3:#1e2038;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);--accent:#7c3aed;--accent2:#9f67ff;--acl:rgba(124,58,237,0.12);--green:#10b981;--gcl:rgba(16,185,129,0.12);--red:#ef4444;--rcl:rgba(239,68,68,0.1);--amber:#f59e0b;--acl2:rgba(245,158,11,0.1);--blue:#3b82f6;--bcl:rgba(59,130,246,0.1);--text:#dde1ff;--text2:#7b80a0;--text3:#454860;--rad:12px;--sw:220px;--tr:.18s cubic-bezier(.4,0,.2,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14.5px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow-x:hidden}
+.sidebar{width:var(--sw);min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.s-logo{padding:20px 16px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.s-logo-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:16px}
+.s-logo-text{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--text)}
+.s-logo-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.s-admin-badge{background:var(--acl);color:var(--accent2);font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.nav-sec{padding:14px 10px 6px}
+.nav-lbl{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--text3);text-transform:uppercase;padding:0 6px;margin-bottom:5px}
+.nav-a{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;color:var(--text2);font-size:13px;font-weight:450;text-decoration:none;margin-bottom:2px;transition:all var(--tr)}
+.nav-a i{width:16px;text-align:center;font-size:13px}
+.nav-a:hover{background:var(--surface2);color:var(--text)}
+.nav-a.active{background:var(--acl);color:var(--accent2);border:1px solid rgba(124,58,237,0.2)}
+.nav-a.active i{color:var(--accent)}
+.s-footer{margin-top:auto;padding:12px 10px;border-top:1px solid var(--border)}
+.user-row{display:flex;align-items:center;gap:9px;padding:9px;border-radius:8px;background:var(--surface2);cursor:pointer}
+.avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;color:#fff}
+.main{margin-left:var(--sw);flex:1;min-height:100vh;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(8,9,16,0.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
+.topbar-left{display:flex;align-items:center;gap:8px}
+.admin-chip{background:var(--acl);color:var(--accent2);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid rgba(124,58,237,0.2)}
+.page-h{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600}
+.content{padding:22px 24px;flex:1}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);padding:18px}
+.card-t{font-size:11.5px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);padding:16px;position:relative;overflow:hidden;transition:border-color var(--tr)}
+.stat:hover{border-color:var(--border2)}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat.v::before{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.stat.g::before{background:linear-gradient(90deg,var(--green),#34d399)}
+.stat.r::before{background:linear-gradient(90deg,var(--red),#fb7185)}
+.stat.b::before{background:linear-gradient(90deg,var(--blue),#60a5fa)}
+.stat.a::before{background:linear-gradient(90deg,var(--amber),#f59e0b)}
+.stat-ico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:15px}
+.stat-ico.v{background:var(--acl);color:var(--accent2)}
+.stat-ico.g{background:var(--gcl);color:var(--green)}
+.stat-ico.r{background:var(--rcl);color:var(--red)}
+.stat-ico.b{background:var(--bcl);color:var(--blue)}
+.stat-ico.a{background:var(--acl2);color:var(--amber)}
+.stat-v{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--text);line-height:1}
+.stat-l{font-size:11px;color:var(--text3);margin-top:5px}
+.stat-s{font-size:11.5px;color:var(--text2);margin-top:3px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+.badge.paid{background:var(--gcl);color:var(--green);border:1px solid rgba(16,185,129,0.2)}
+.badge.pending{background:var(--acl2);color:var(--amber);border:1px solid rgba(245,158,11,0.2)}
+.badge.overdue{background:var(--rcl);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
+.badge.active{background:var(--gcl);color:var(--green);border:1px solid rgba(16,185,129,0.2)}
+.badge.inactive{background:var(--rcl);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
+.badge.admin{background:var(--acl);color:var(--accent2);border:1px solid rgba(124,58,237,0.2)}
+table{width:100%;border-collapse:collapse}
+thead th{padding:9px 12px;font-size:10.5px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);text-align:left}
+tbody td{padding:12px 12px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border:none}
+tbody tr:hover td{background:var(--surface2)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all var(--tr);text-decoration:none;white-space:nowrap;font-family:inherit}
+.btn-v{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-v:hover{background:var(--accent2);box-shadow:0 4px 18px var(--acl)}
+.btn-g{background:var(--surface2);color:var(--text2);border-color:var(--border2)}
+.btn-g:hover{background:var(--surface3);color:var(--text)}
+.btn-r{background:var(--rcl);color:var(--red);border-color:rgba(239,68,68,0.2)}
+.btn-r:hover{background:rgba(239,68,68,0.18)}
+.btn-success{background:var(--gcl);color:var(--green);border-color:rgba(16,185,129,0.2)}
+.btn-sm{padding:4px 11px;font-size:12px}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:5px}
+.flash-container{position:fixed;top:16px;right:16px;z-index:999;display:flex;flex-direction:column;gap:8px;max-width:320px}
+.flash-msg{padding:10px 14px;border-radius:8px;font-size:12.5px;font-weight:500;display:flex;align-items:center;gap:8px;animation:sIn .3s ease;border:1px solid}
+.flash-msg.success{background:var(--gcl);color:var(--green);border-color:rgba(16,185,129,0.2)}
+.flash-msg.danger{background:var(--rcl);color:var(--red);border-color:rgba(239,68,68,0.2)}
+.flash-msg.info{background:var(--bcl);color:var(--blue);border-color:rgba(59,130,246,0.2)}
+@keyframes sIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+.table-wrap{overflow-x:auto}
+.search-input{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:8px 14px;color:var(--text);font-size:13px;font-family:inherit;width:240px}
+.search-input:focus{outline:none;border-color:var(--accent)}
+.search-input::placeholder{color:var(--text3)}
+.progress-bar{height:5px;background:var(--surface3);border-radius:3px;overflow:hidden}
+.pf{height:100%;border-radius:3px}
+.pf.g{background:var(--green)}.pf.r{background:var(--red)}.pf.b{background:var(--blue)}.pf.a{background:var(--amber)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="s-logo">
+    <div class="s-logo-icon">🛡️</div>
+    <div>
+      <div class="s-logo-text">EMI Guardian</div>
+      <div class="s-admin-badge">Admin Panel</div>
+    </div>
+  </div>
+  <div class="nav-sec">
+    <div class="nav-lbl">Overview</div>
+    <a href="{{ url_for('admin.index') }}" class="nav-a {% if request.endpoint=='admin.index' %}active{% endif %}">
+      <i class="fa-solid fa-gauge"></i> Dashboard
+    </a>
+  </div>
+  <div class="nav-sec">
+    <div class="nav-lbl">Management</div>
+    <a href="{{ url_for('admin.users') }}" class="nav-a {% if request.endpoint in ['admin.users','admin.user_detail'] %}active{% endif %}">
+      <i class="fa-solid fa-users"></i> Users
+    </a>
+    <a href="{{ url_for('admin.all_emis') }}" class="nav-a {% if request.endpoint=='admin.all_emis' %}active{% endif %}">
+      <i class="fa-solid fa-list-check"></i> All EMIs
+    </a>
+    <a href="{{ url_for('admin.all_payments') }}" class="nav-a {% if request.endpoint=='admin.all_payments' %}active{% endif %}">
+      <i class="fa-solid fa-receipt"></i> Payments
+    </a>
+  </div>
+  <div class="nav-sec">
+    <div class="nav-lbl">Quick Links</div>
+    <a href="{{ url_for('dashboard.index') }}" class="nav-a">
+      <i class="fa-solid fa-arrow-left"></i> Back to App
+    </a>
+    <a href="{{ url_for('auth.logout') }}" class="nav-a" style="color:var(--red)">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+    </a>
+  </div>
+  <div class="s-footer">
+    <div class="user-row">
+      <div class="avatar">A</div>
+      <div>
+        <div style="font-size:12.5px;font-weight:500;color:var(--text)">{{ current_user.name }}</div>
+        <div style="font-size:10.5px;color:var(--text3)">Super Admin</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="admin-chip"><i class="fa-solid fa-shield-halved"></i> Admin</span>
+      <span class="page-h">{% block page_title %}Admin Panel{% endblock %}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:12px;color:var(--text3)">EMI Guardian AI v1.0</span>
+    </div>
+  </div>
+
+  <div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash-msg {{ cat }}"><i class="fa-solid fa-circle-info"></i> {{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+
+  <div class="content">{% block content %}{% endblock %}</div>
+</div>
+
+<script>
+setTimeout(() => {
+  document.querySelectorAll('.flash-msg').forEach(el => {
+    el.style.transition = 'opacity .4s'; el.style.opacity = '0';
+    setTimeout(() => el.remove(), 400);
+  });
+}, 3000);
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Settings — EMI Guardian AI{% endblock %}
+{% block page_title %}Profile & Settings{% endblock %}
+{% block page_subtitle %}Manage your account, notifications and security{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <!-- LEFT: Profile Form -->
+  <div>
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding:16px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+        <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#4f7ef8,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;flex-shrink:0">
+          {{ current_user.name[0].upper() }}
+        </div>
+        <div>
+          <div style="font-size:17px;font-weight:600;color:#e8eaff">{{ current_user.name }}</div>
+          <div style="font-size:13px;color:#5a5e7a">{{ current_user.email }}</div>
+          <div style="font-size:11px;color:#4f7ef8;margin-top:4px">Member since {{ current_user.created_at.strftime('%B %Y') }}</div>
+        </div>
+      </div>
+
+      <div class="card-title">Personal Information</div>
+      <form method="POST" action="{{ url_for('dashboard.profile') }}">
+        <input type="hidden" name="form_type" value="profile">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" class="form-control" name="name" value="{{ current_user.name }}" required>
+          </div>
+          <div class="form-group">
+            <label>Occupation</label>
+            <input type="text" class="form-control" name="occupation" value="{{ current_user.occupation or '' }}" placeholder="e.g. Software Engineer">
+          </div>
+          <div class="form-group">
+            <label>Monthly Income (₹)</label>
+            <input type="number" class="form-control" name="monthly_income" value="{{ current_user.monthly_income|int }}" placeholder="35000">
+          </div>
+          <div class="form-group">
+            <label>Salary Date (Day of month)</label>
+            <input type="number" class="form-control" name="salary_date" value="{{ current_user.salary_date }}" min="1" max="31">
+          </div>
+          <div class="form-group">
+            <label>Preferred Reminder Time</label>
+            <input type="time" class="form-control" name="reminder_time" value="{{ current_user.reminder_time or '09:00' }}">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:8px">
+          <i class="fa-solid fa-save"></i> Save Profile
+        </button>
+      </form>
+    </div>
+
+    <!-- Notification Settings -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">🔔 Notification Settings</div>
+      <form method="POST" action="{{ url_for('dashboard.profile') }}">
+        <input type="hidden" name="form_type" value="notifications">
+        <div style="margin-bottom:12px;font-size:12px;font-weight:500;color:#5a5e7a;text-transform:uppercase;letter-spacing:.5px">Channels</div>
+        {% for field, label, icon in [
+          ('email_notif', 'Email Reminders', 'fa-envelope'),
+          ('whatsapp_notif', 'WhatsApp Alerts', 'fa-whatsapp fab'),
+          ('sms_notif', 'SMS Notifications', 'fa-comment-sms')
+        ] %}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px">
+            <i class="fa-solid {{ icon }}" style="color:#8b8fa8;width:16px"></i>
+            <span style="font-size:13px;color:#e8eaff">{{ label }}</span>
+          </div>
+          <input type="checkbox" name="{{ field }}" {% if (field == 'email_notif' and current_user.email_notif) or (field == 'whatsapp_notif' and current_user.whatsapp_notif) or (field == 'sms_notif' and current_user.sms_notif) %}checked{% endif %}
+            style="width:16px;height:16px;accent-color:#4f7ef8;cursor:pointer">
+        </div>
+        {% endfor %}
+        <div style="margin:14px 0 10px;font-size:12px;font-weight:500;color:#5a5e7a;text-transform:uppercase;letter-spacing:.5px">Reminder Timing</div>
+        {% for label in ['7 days before due', '3 days before due', '1 day before due', 'On due date', 'Overdue alerts'] %}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:13px;color:#e8eaff">{{ label }}</span>
+          <input type="checkbox" checked style="width:16px;height:16px;accent-color:#4f7ef8;cursor:pointer">
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary" style="margin-top:14px">
+          <i class="fa-solid fa-save"></i> Save Notifications
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- RIGHT: Financial Summary + Security -->
+  <div>
+    <!-- Financial Summary -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">📊 Financial Summary</div>
+      {% set emis = current_user.emis | selectattr('is_active') | list %}
+      {% set total_emi = current_user.total_emi() %}
+      {% set ratio = current_user.emi_ratio() %}
+      {% set score = current_user.health_score() %}
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+          <div style="font-size:11px;color:#5a5e7a">Active Loans</div>
+          <div style="font-size:24px;font-weight:700;color:#4f7ef8">{{ emis|length }}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+          <div style="font-size:11px;color:#5a5e7a">Monthly EMI</div>
+          <div style="font-size:20px;font-weight:700;color:#e8eaff">₹{{ "{:,.0f}".format(total_emi) }}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+          <div style="font-size:11px;color:#5a5e7a">EMI Ratio</div>
+          <div style="font-size:20px;font-weight:700;color:{{ '#f87171' if ratio>50 else '#fbbf24' if ratio>35 else '#22d3a5' }}">{{ ratio }}%</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+          <div style="font-size:11px;color:#5a5e7a">Health Score</div>
+          <div style="font-size:20px;font-weight:700;color:{{ '#22d3a5' if score>=75 else '#fbbf24' if score>=50 else '#f87171' }}">{{ score }}/100</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:#5a5e7a;margin-bottom:6px">EMI Burden ({{ ratio }}% of income)</div>
+      <div class="progress-bar" style="height:8px">
+        <div class="progress-fill {{ 'green' if ratio<=35 else 'amber' if ratio<=50 else 'red' }}" style="width:{{ [ratio,100]|min }}%"></div>
+      </div>
+      <div style="font-size:11px;color:#5a5e7a;margin-top:5px">
+        {{ 'Healthy — below 35%' if ratio<=35 else 'Moderate — between 35–50%' if ratio<=50 else '⚠️ High risk — above 50%! Avoid new loans.' }}
+      </div>
+
+      {% if emis %}
+      <div style="margin-top:16px">
+        <div style="font-size:12px;font-weight:500;color:#5a5e7a;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Loan Breakdown</div>
+        {% for e in emis %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:13px;color:#e8eaff">{{ e.category_icon() }} {{ e.name }}</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:12px;color:{{ '#f87171' if e.interest_rate>15 else '#fbbf24' if e.interest_rate>10 else '#22d3a5' }};font-weight:600">{{ e.interest_rate }}%</span>
+            <span class="badge {{ e.status }}">{{ e.status }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Change Password -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">🔒 Change Password</div>
+      <form method="POST" action="{{ url_for('dashboard.profile') }}">
+        <input type="hidden" name="form_type" value="password">
+        <div class="form-group">
+          <label>Current Password</label>
+          <input type="password" class="form-control" name="current_password" placeholder="Enter current password" required>
+        </div>
+        <div class="form-group">
+          <label>New Password</label>
+          <input type="password" class="form-control" name="new_password" placeholder="Min 6 characters" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label>Confirm New Password</label>
+          <input type="password" class="form-control" name="confirm_password" placeholder="Repeat new password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:4px">
+          <i class="fa-solid fa-lock"></i> Update Password
+        </button>
+      </form>
+    </div>
+
+    <!-- Export & Tools -->
+    <div class="card">
+      <div class="card-title">🛠️ Tools & Export</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <a href="{{ url_for('emi_bp.history') }}" class="btn btn-ghost" style="justify-content:center">
+          <i class="fa-solid fa-clock-rotate-left"></i> Payment History
+        </a>
+        <a href="{{ url_for('emi_bp.calculator') }}" class="btn btn-ghost" style="justify-content:center">
+          <i class="fa-solid fa-calculator"></i> EMI Calculator
+        </a>
+        <a href="{{ url_for('emi_bp.list_emis') }}" class="btn btn-ghost" style="justify-content:center">
+          <i class="fa-solid fa-list-check"></i> All EMIs
+        </a>
+        <a href="{{ url_for('emi_bp.add_emi') }}" class="btn btn-primary" style="justify-content:center">
+          <i class="fa-solid fa-plus"></i> Add New EMI
+        </a>
+      </div>
+      {% if current_user.is_admin %}
+      <div style="margin-top:10px">
+        <a href="{{ url_for('admin.index') }}" class="btn btn-ghost" style="width:100%;justify-content:center">
+          <i class="fa-solid fa-shield-halved"></i> Go to Admin Panel
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
