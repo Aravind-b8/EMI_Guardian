@@ -102,8 +102,108 @@ class Payment(db.Model):
     remarks      = db.Column(db.String(200), default='')
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
 
+
+
+
+# 📥 1. THE OUTBOUND CHANNELS (Real Workers)
+# =====================================================================
+# 🔔 DYNAMIC AUTOMATED NOTIFICATION & CRON CHECK ENGINE
+# =====================================================================
+import requests
+from datetime import date, datetime
+
+def send_email_via_resend(user_email, user_name, emi_name, emi_amount, due_date):
+    """Sends a professional HTML transactional email alert using the Resend platform API."""
+    # 🌟 CRITICAL ROUTE FIX: Points directly to the verified API delivery endpoint
+    url = "https://resend.com"
+    headers = {
+        "Authorization": "Bearer re_YourActualResendAPIKeyHerePattern",  # 🌟 Replace with your live Resend API key
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "from": "EMI Guardian <onboarding@resend.dev>",
+        "to": [user_email],
+        "subject": f"⏰ Reminder: Your {emi_name} EMI is due in 5 Days!",
+        "html": f"""
+        <h3>Hello {user_name},</h3>
+        <p>This is an automated alert from your **EMI Guardian Portal**.</p>
+        <p>Your upcoming installment for <strong>{emi_name}</strong> is scheduled in exactly 5 days.</p>
+        <ul>
+            <li><strong>Amount Due:</strong> ₹{emi_amount:,.2f}</li>
+            <li><strong>Due Date:</strong> {due_date}</li>
+        </ul>
+        <p>Please ensure your account has sufficient balance to maintain a healthy credit score.</p>
+        """
+    }
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        return response.status_code in [200, 201, 202]
+    except Exception as e:
+        print(f"❌ Resend API Dispatch Error: {e}")
+        return False
+
+
+def send_whatsapp_via_meta(phone_number, user_name, emi_name, emi_amount, due_date):
+    """Logs an automated WhatsApp template tracking alert to the local system log console."""
+    print(f"📱 [WhatsApp Log] Dispatched to {phone_number}: Hello {user_name}, your {emi_name} EMI of ₹{emi_amount} is due on {due_date}!")
+    return True
+
+
+def check_and_send_daily_reminders(): 
+    """
+    Scans account tables to look for installments falling exactly 5 days away from today.
+    Fires notifications to outbound API channels strictly respecting user saved preference states.
+    """ 
+    print("--> [Scheduler] Executing daily 5-day advance notification scan...") 
+    all_users = User.query.filter_by(is_active_account=True).all() 
+    today = date.today() 
+    alerts_dispatched = 0 
+    
+    for user in all_users: 
+        for emi in user.emis: 
+            if not emi.is_active or emi.status == 'paid': 
+                continue 
+                
+            try: 
+                due_year, due_month = today.year, today.month 
+                if today.day > emi.emi_day: 
+                    due_month = 1 if today.month == 12 else today.month + 1
+                    due_year = today.year + 1 if today.month == 12 else today.year
+                        
+                import calendar 
+                max_days = calendar.monthrange(due_year, due_month)[1]
+                target_day = min(emi.emi_day, max_days) 
+                next_due_date = date(due_year, due_month, target_day) 
+                
+                # Check if it satisfies the 5-day lead warning rule condition
+                if (next_due_date - today).days == 5: 
+                    due_str = next_due_date.strftime('%d-%b-%Y')
+                    
+                    # 📨 Channel 1: Execute Email via Resend if checked on profile page
+                    if user.email_notif and user.email:
+                        send_email_via_resend(user.email, user.name, emi.name, emi.emi_amount, due_str)
+                        
+                    # 📱 Channel 2: Execute WhatsApp Log if checked on profile page
+                    if user.whatsapp_notif and user.whatsapp_number:
+                        send_whatsapp_via_meta(user.whatsapp_number, user.name, emi.name, emi.emi_amount, due_str)
+                        
+                    alerts_dispatched += 1 
+            except Exception as e: 
+                print(f"Error calculating dates for EMI ID {emi.id}: {e}") 
+                
+    return alerts_dispatched
+
+
+# 3. Existing force-cron-check route 
+@notification_bp.route('/admin/force-cron-check') 
+@login_required 
+def force_cron_check(): 
+    count = check_and_send_daily_reminders()
+    flash(f"Manual check complete. Scan finished. Reminders sent: {count}", "info")
+    return redirect(url_for('dashboard.index')) 
+
 # ── App Factory ──────────────────────────────────────────────────────────────
-# ── App Factory ──────────────────────────────────────────────────────────────
+
 def create_app():
     app = Flask(__name__)
 
@@ -208,13 +308,6 @@ def send_notification(user_id):
     # ... (keep your existing function code here) ... 
     return redirect(url_for('dashboard.index')) 
 
-# 3. Existing force-cron-check route 
-@notification_bp.route('/admin/force-cron-check') 
-@login_required 
-def force_cron_check(): 
-    count = check_and_send_daily_reminders()
-    flash(f"Manual check complete. Scan finished. Reminders sent: {count}", "info")
-    return redirect(url_for('dashboard.index')) 
 
 # =====================================================================
 # 🌟 PERFECTLY ALIGNED DYNAMIC DATA-DRIVEN AI ADVISOR ENGINE
@@ -845,109 +938,6 @@ app = create_app()
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-# 📥 1. THE OUTBOUND CHANNELS (Real Workers)
-# =====================================================================
-# 🔔 DYNAMIC AUTOMATED NOTIFICATION & CRON CHECK ENGINE
-# =====================================================================
-import requests
-from datetime import date, datetime
-
-def send_email_via_resend(user_email, user_name, emi_name, emi_amount, due_date):
-    """Sends a professional HTML transactional email alert using the Resend platform API."""
-    # 🌟 CRITICAL ROUTE FIX: Points directly to the verified API delivery endpoint
-    url = "https://resend.com"
-    headers = {
-        "Authorization": "Bearer re_YourActualResendAPIKeyHerePattern",  # 🌟 Replace with your live Resend API key
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "from": "EMI Guardian <onboarding@resend.dev>",
-        "to": [user_email],
-        "subject": f"⏰ Reminder: Your {emi_name} EMI is due in 5 Days!",
-        "html": f"""
-        <h3>Hello {user_name},</h3>
-        <p>This is an automated alert from your **EMI Guardian Portal**.</p>
-        <p>Your upcoming installment for <strong>{emi_name}</strong> is scheduled in exactly 5 days.</p>
-        <ul>
-            <li><strong>Amount Due:</strong> ₹{emi_amount:,.2f}</li>
-            <li><strong>Due Date:</strong> {due_date}</li>
-        </ul>
-        <p>Please ensure your account has sufficient balance to maintain a healthy credit score.</p>
-        """
-    }
-    try:
-        response = requests.post(url, json=payload, headers=headers)
-        return response.status_code in [200, 201, 202]
-    except Exception as e:
-        print(f"❌ Resend API Dispatch Error: {e}")
-        return False
-
-
-def send_whatsapp_via_meta(phone_number, user_name, emi_name, emi_amount, due_date):
-    """Logs an automated WhatsApp template tracking alert to the local system log console."""
-    print(f"📱 [WhatsApp Log] Dispatched to {phone_number}: Hello {user_name}, your {emi_name} EMI of ₹{emi_amount} is due on {due_date}!")
-    return True
-
-
-def check_and_send_daily_reminders(): 
-    """
-    Scans account tables to look for installments falling exactly 5 days away from today.
-    Fires notifications to outbound API channels strictly respecting user saved preference states.
-    """ 
-    print("--> [Scheduler] Executing daily 5-day advance notification scan...") 
-    all_users = User.query.filter_by(is_active_account=True).all() 
-    today = date.today() 
-    alerts_dispatched = 0 
-    
-    for user in all_users: 
-        for emi in user.emis: 
-            if not emi.is_active or emi.status == 'paid': 
-                continue 
-                
-            try: 
-                due_year, due_month = today.year, today.month 
-                if today.day > emi.emi_day: 
-                    due_month = 1 if today.month == 12 else today.month + 1
-                    due_year = today.year + 1 if today.month == 12 else today.year
-                        
-                import calendar 
-                max_days = calendar.monthrange(due_year, due_month)[1]
-                target_day = min(emi.emi_day, max_days) 
-                next_due_date = date(due_year, due_month, target_day) 
-                
-                # Check if it satisfies the 5-day lead warning rule condition
-                if (next_due_date - today).days == 5: 
-                    due_str = next_due_date.strftime('%d-%b-%Y')
-                    
-                    # 📨 Channel 1: Execute Email via Resend if checked on profile page
-                    if user.email_notif and user.email:
-                        send_email_via_resend(user.email, user.name, emi.name, emi.emi_amount, due_str)
-                        
-                    # 📱 Channel 2: Execute WhatsApp Log if checked on profile page
-                    if user.whatsapp_notif and user.whatsapp_number:
-                        send_whatsapp_via_meta(user.whatsapp_number, user.name, emi.name, emi.emi_amount, due_str)
-                        
-                    alerts_dispatched += 1 
-            except Exception as e: 
-                print(f"Error calculating dates for EMI ID {emi.id}: {e}") 
-                
-    return alerts_dispatched
-
-
-# 🌟 CLEAN SINGLE TRIGGER ROUTE: Bypasses duplicate mapping issues completely
-@notification_bp.route('/admin/force-cron-check')
-@login_required
-def force_cron_check():
-    """Forces the automation script to execute immediately and redirects cleanly to your dashboard template."""
-    count = check_and_send_daily_reminders()
-    flash(f"Manual check complete. Reminders processed and sent to active channels: {count}", "info")
-    # Clean, verified fallback route redirect
-    return redirect(url_for('dashboard.index'))
-
-
-
-
 
 
 
