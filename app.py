@@ -104,7 +104,7 @@ class Payment(db.Model):
 
 
 
-
+notification_bp = Blueprint('notification', __name__) 
 # 📥 1. THE OUTBOUND CHANNELS (Real Workers)
 # =====================================================================
 # 🔔 DYNAMIC AUTOMATED NOTIFICATION & CRON CHECK ENGINE
@@ -194,6 +194,7 @@ def check_and_send_daily_reminders():
     return alerts_dispatched
 
 
+
 # 3. Existing force-cron-check route 
 @notification_bp.route('/admin/force-cron-check') 
 @login_required 
@@ -240,7 +241,7 @@ def seed():
 # ====================================================================
 
 # 1. Blueprint Initialization
-notification_bp = Blueprint('notification', __name__) 
+
 
 # 2. Existing send_notification route 
 @notification_bp.route('/admin/send-notification/<int:user_id>', methods=['GET', 'POST']) 
