@@ -253,11 +253,6 @@ def send_notification(user_id):
 # =====================================================================
 # 🌟 PERFECTLY ALIGNED DYNAMIC DATA-DRIVEN AI ADVISOR ENGINE
 # =====================================================================
-# 1. Create the blueprint
-notification_bp = Blueprint('notification', __name__)
-
-# 2. This is the updated route using the blueprint 🌟
-@notification_bp.route('/admin/send-notification/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 def send_notification(user_id):
     target_user = User.query.get_or_404(user_id)
@@ -367,7 +362,6 @@ def send_whatsapp_redirect(phone_number, user_name, emi_amount, due_date):
     except Exception as e:
         print(f"Failed to launch WhatsApp helper: {e}")
         return False
-notification_bp = Blueprint('notification', __name__)
 # 4. Flask Route to trigger the reminders based on User data
 
 
@@ -833,34 +827,6 @@ def chat():
     except Exception:
         traceback.print_exc()
         return jsonify({ "reply": "AI service is currently experiencing network issues. Please try again in a few moments." })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 @api_bp.route('/stats')
 @login_required
