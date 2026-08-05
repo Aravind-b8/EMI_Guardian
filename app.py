@@ -243,15 +243,6 @@ def seed():
 
 # 1. Blueprint Initialization
 
-
-# 2. Existing send_notification route 
-@notification_bp.route('/admin/send-notification/<int:user_id>', methods=['GET', 'POST']) 
-@login_required 
-def send_notification(user_id): 
-    # ... (keep your existing function code here) ... 
-    return redirect(url_for('dashboard.index')) 
-
-
 # =====================================================================
 # 🌟 PERFECTLY ALIGNED DYNAMIC DATA-DRIVEN AI ADVISOR ENGINE
 # =====================================================================
@@ -286,7 +277,7 @@ def send_notification(user_id):
     else:
         flash("No notifications were sent. Check user notification preferences.", "info")
         
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('dashboard.index'))
 
 
 # 3. Add the test route right below it 🌟
