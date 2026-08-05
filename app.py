@@ -202,66 +202,7 @@ def force_cron_check():
     flash(f"Manual check complete. Scan finished. Reminders sent: {count}", "info")
     return redirect(url_for('dashboard.index')) 
 
-# ── App Factory ──────────────────────────────────────────────────────────────
 
-def create_app():
-    app = Flask(__name__)
-
-    # Secret Key
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "emi-guardian-secret")
-
-    scheduler = APScheduler()
-
-    # ---------------- Database Configuration ----------------
-    database_url = os.getenv("DATABASE_URL")
-
-    if database_url:
-        # Render PostgreSQL
-        app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-    else:
-        # Local PostgreSQL
-        app.config["SQLALCHEMY_DATABASE_URI"] = (
-            f"postgresql://"
-            f"{os.getenv('PG_USER', 'postgres')}:"
-            f"{os.getenv('PG_PASS', 'lingeswar')}@"
-            f"{os.getenv('PG_HOST', 'localhost')}:"
-            f"{os.getenv('PG_PORT', '5432')}/"
-            f"{os.getenv('PG_DB', 'emi_guardian')}"
-        )
-
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-    # Initialize Extensions
-    db.init_app(app)
-    bcrypt.init_app(app)
-    login_manager.init_app(app)
-
-    login_manager.login_view = "auth.login"
-    login_manager.login_message = "Please login to continue."
-    login_manager.login_message_category = "info"
-
-    @login_manager.user_loader
-    def load_user(uid):
-        return db.session.get(User, int(uid))
-
-    # Register Blueprints
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(dash_bp)
-    app.register_blueprint(emi_bp)
-    app.register_blueprint(admin_bp, url_prefix="/admin")
-    app.register_blueprint(api_bp, url_prefix="/api")
-    app.register_blueprint(notification_bp, url_prefix="/admin")
-
-    # Start Scheduler
-    scheduler.init_app(app)
-    scheduler.start()
-
-    # Create Database Tables
-    with app.app_context():
-        db.create_all()
-        seed()
-
-    return app
 
 def seed():
     if 'users' not in inspect(db.engine).get_table_names(): return
@@ -934,6 +875,68 @@ def stats():
     emis=db.session.execute(select(EMI).where(EMI.user_id==current_user.id,EMI.is_active==True)).scalars().all()
     return jsonify({'monthly_trend':monthly,'by_category':[{'cat':e.category,'emi':e.emi_amount,'rate':e.interest_rate} for e in emis]})
 
+
+
+# ── App Factory ──────────────────────────────────────────────────────────────
+
+def create_app():
+    app = Flask(__name__)
+
+    # Secret Key
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "emi-guardian-secret")
+
+    scheduler = APScheduler()
+
+    # ---------------- Database Configuration ----------------
+    database_url = os.getenv("DATABASE_URL")
+
+    if database_url:
+        # Render PostgreSQL
+        app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    else:
+        # Local PostgreSQL
+        app.config["SQLALCHEMY_DATABASE_URI"] = (
+            f"postgresql://"
+            f"{os.getenv('PG_USER', 'postgres')}:"
+            f"{os.getenv('PG_PASS', 'lingeswar')}@"
+            f"{os.getenv('PG_HOST', 'localhost')}:"
+            f"{os.getenv('PG_PORT', '5432')}/"
+            f"{os.getenv('PG_DB', 'emi_guardian')}"
+        )
+
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    # Initialize Extensions
+    db.init_app(app)
+    bcrypt.init_app(app)
+    login_manager.init_app(app)
+
+    login_manager.login_view = "auth.login"
+    login_manager.login_message = "Please login to continue."
+    login_manager.login_message_category = "info"
+
+    @login_manager.user_loader
+    def load_user(uid):
+        return db.session.get(User, int(uid))
+
+    # Register Blueprints
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(dash_bp)
+    app.register_blueprint(emi_bp)
+    app.register_blueprint(admin_bp, url_prefix="/admin")
+    app.register_blueprint(api_bp, url_prefix="/api")
+    app.register_blueprint(notification_bp, url_prefix="/admin")
+
+    # Start Scheduler
+    scheduler.init_app(app)
+    scheduler.start()
+
+    # Create Database Tables
+    with app.app_context():
+        db.create_all()
+        seed()
+
+    return app
 app = create_app()
 
 if __name__ == "__main__":
