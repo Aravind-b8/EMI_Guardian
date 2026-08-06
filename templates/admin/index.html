@@ -43,16 +43,25 @@
 </div>
 
 <div class="grid2" style="margin-bottom:14px">
+
   <!-- EMI by Category -->
-  <div class="card">
-    <div class="card-t">EMI Distribution by Category</div>
-    <canvas id="catChart" height="200"></canvas>
+  <div class="card chart-card">
+      <div class="card-t">EMI Distribution by Category</div>
+
+      <div class="chart-container">
+          <canvas id="catChart"></canvas>
+      </div>
   </div>
-  <!-- Status Overview -->
-  <div class="card">
-    <div class="card-t">Platform EMI Status</div>
-    <canvas id="statusChart" height="200"></canvas>
+
+  <!-- Platform EMI Status -->
+  <div class="card chart-card">
+      <div class="card-t">Platform EMI Status</div>
+
+      <div class="chart-container">
+          <canvas id="statusChart"></canvas>
+      </div>
   </div>
+
 </div>
 
 <div class="grid2" style="margin-bottom:14px">
@@ -152,29 +161,92 @@ const catCounts = [{% for c in emi_by_cat %}{{ c[1] }}{% if not loop.last %},{% 
 const colors = ['#7c3aed','#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16'];
 
 new Chart(document.getElementById('catChart').getContext('2d'), {
-  type: 'doughnut',
-  data: { labels: cats, datasets: [{ data: catCounts, backgroundColor: colors, borderWidth: 0, hoverOffset: 4 }] },
-  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position:'right', labels:{ color:'#7b80a0', font:{size:11}, boxWidth:10, padding:8 } } }, cutout: '60%' }
+    type: 'doughnut',
+    data: {
+        labels: cats,
+        datasets: [{
+            data: catCounts,
+            backgroundColor: colors,
+            borderWidth:0,
+            hoverOffset:8
+        }]
+    },
+    options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            position: 'right',
+            labels: {
+                color: '#7b80a0',
+                font: { size: 11 },
+                boxWidth: 10,
+                padding: 8
+            }
+        }
+    },
+    cutout: '60%'
+}
 });
 
 new Chart(document.getElementById('statusChart').getContext('2d'), {
-  type: 'bar',
-  data: {
-    labels: ['Paid', 'Pending', 'Overdue'],
-    datasets: [{ data: [
-      {{ total_emis - overdue_emis - pending_emis }},
-      {{ pending_emis }},
-      {{ overdue_emis }}
-    ], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderRadius: 7, borderWidth: 0 }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+
+    type:'bar',
+
+    data:{
+        labels:['Paid','Pending','Overdue'],
+
+        datasets:[{
+
+            data:[
+                Math.max(0, {{ total_emis - overdue_emis - pending_emis }}),
+                {{ pending_emis }},
+                {{ overdue_emis }}
+            ],
+
+            backgroundColor:[
+                '#22c55e',
+                '#f59e0b',
+                '#ef4444'
+            ],
+
+            borderRadius:10,
+            borderSkipped:false,
+            maxBarThickness:70
+
+        }]
+    },
+
+    options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            display: false
+        }
+    },
     scales: {
-      y: { ticks: { color:'#454860' }, grid: { color:'rgba(255,255,255,0.04)' } },
-      x: { ticks: { color:'#7b80a0' }, grid: { display: false } }
+        y: {
+            beginAtZero: true,
+            ticks: {
+                color: '#454860',
+                precision: 0
+            },
+            grid: {
+                color: 'rgba(255,255,255,0.04)'
+            }
+        },
+        x: {
+            ticks: {
+                color: '#7b80a0'
+            },
+            grid: {
+                display: false
+            }
+        }
     }
-  }
+}
+
 });
 </script>
 {% endblock %}

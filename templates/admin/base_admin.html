@@ -94,6 +94,23 @@ tbody tr:hover td{background:var(--surface2)}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+.chart-card{
+    height:420px;
+    display:flex;
+    flex-direction:column;
+}
+
+.chart-container{
+    position:relative;
+    flex:1;
+    width:100%;
+    min-height:320px;
+}
+
+.chart-container canvas{
+    width:100% !important;
+    height:100% !important;
+}
 </style>
 </head>
 <body>
