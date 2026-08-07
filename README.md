@@ -2,6 +2,10 @@
 
 Never miss an EMI again. AI-powered loan tracking with admin panel.
 
+## 🚀 Live Demo
+
+🔗 https://emi-guardian-1.onrender.com/
+
 ## 🚀 Quick Setup (Windows)
 
 ### Step 1 — Open terminal in the project folder
